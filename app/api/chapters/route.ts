@@ -2,12 +2,28 @@ import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '../../../lib/mongodb'
 import Chapter from '../../../models/Chapter'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect()
-    const chapters = await Chapter.find({ isPublished: true }).sort({ order: 1 })
-    return NextResponse.json(chapters)
+
+    const searchParams = request.nextUrl.searchParams
+    const chapterId = searchParams.get('chapterId') // "1", "2", "3", ...
+
+    if (chapterId) {
+      // Lấy chapter theo chapterId
+      const chapter = await Chapter.findOne({ chapterId: chapterId })
+      if (!chapter) {
+        return NextResponse.json({ error: 'Chapter not found' }, { status: 404 })
+      }
+      return NextResponse.json(chapter)
+    }
+    else {
+      // Lấy tất cả chapters, sắp xếp theo chapterId
+      const chapters = await Chapter.find().sort({ chapterId: 1 })
+      return NextResponse.json(chapters)
+    }
   } catch (error) {
+    console.error('Error fetching chapters:', error)
     return NextResponse.json({ error: 'Failed to fetch chapters' }, { status: 500 })
   }
 }

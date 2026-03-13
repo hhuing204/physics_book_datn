@@ -69,22 +69,22 @@ export default function PracticePage() {
         setLoading(true)
         const response = await fetch('/api/exercises')
         const data = await response.json()
-        
+
         if (data.success && data.exercises) {
           // Lấy ngẫu nhiên 3 câu cho mỗi bài (4 bài, tổng 12 câu)
           const selectedExercises: Exercise[] = []
-          
+
           for (let lessonId = 1; lessonId <= 4; lessonId++) {
             const lessonExercises = data.exercises.filter(
               (ex: Exercise) => ex.lessonId === lessonId.toString()
             )
-            
+
             // Shuffle và lấy 3 câu ngẫu nhiên
             const shuffled = [...lessonExercises].sort(() => Math.random() - 0.5)
             const selected = shuffled.slice(0, 3)
             selectedExercises.push(...selected)
           }
-          
+
           // Shuffle tất cả các câu đã chọn
           const finalExercises = selectedExercises.sort(() => Math.random() - 0.5)
           setExercises(finalExercises)
@@ -122,7 +122,7 @@ export default function PracticePage() {
 
   const handleKeyPress = (e: KeyboardEvent) => {
     if (showResult) return
-    
+
     const exercise = exercises[currentExercise]
     if (exercise.type === 'multiple-choice' && exercise.options) {
       const key = parseInt(e.key)
@@ -249,7 +249,7 @@ export default function PracticePage() {
 
 
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 30000) // Timeout 30s (tăng từ 10s)
+      const timeoutId = setTimeout(() => controller.abort(), 360000) // Timeout 30s (tăng từ 10s)
 
       const response = await fetch('/api/ai/analyze', {
         method: 'POST',
@@ -265,6 +265,7 @@ export default function PracticePage() {
       if (response.ok) {
         const data = await response.json()
         if (data.success && data.analysis) {
+          console.log(data.analysis)
           setAiAnalysis(data.analysis)
           setShowAIAnalysis(true)
           return
@@ -306,27 +307,27 @@ export default function PracticePage() {
     setScore(0)
     setShowFinalResult(false)
     setStartTime(new Date())
-    
+
     // Fetch lại exercises mới
     const fetchExercises = async () => {
       try {
         setLoading(true)
         const response = await fetch('/api/exercises')
         const data = await response.json()
-        
+
         if (data.success && data.exercises) {
           const selectedExercises: Exercise[] = []
-          
+
           for (let lessonId = 1; lessonId <= 4; lessonId++) {
             const lessonExercises = data.exercises.filter(
               (ex: Exercise) => ex.lessonId === lessonId.toString()
             )
-            
+
             const shuffled = [...lessonExercises].sort(() => Math.random() - 0.5)
             const selected = shuffled.slice(0, 6)
             selectedExercises.push(...selected)
           }
-          
+
           const finalExercises = selectedExercises.sort(() => Math.random() - 0.5)
           setExercises(finalExercises)
           setCompleted(new Array(finalExercises.length).fill(false))
@@ -497,7 +498,7 @@ export default function PracticePage() {
               </button>
 
               <button
-                onClick={() => router.push('/lessons')}
+                onClick={() => router.push('/lesson')}
                 className="w-full px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium"
               >
                 📚 Quay lại học tập
@@ -585,7 +586,7 @@ export default function PracticePage() {
                               <h4 className="font-medium text-gray-900 dark:text-white">{plan.topic}</h4>
                               <span className="text-sm text-blue-600 dark:text-blue-400">{plan.time}</span>
                             </div>
-                            {plan.resources.length > 0 && (
+                            {plan.resources && plan.resources.length > 0 && (
                               <div className="text-sm text-gray-600 dark:text-gray-300">
                                 <span className="font-medium">Tài nguyên: </span>
                                 {plan.resources.join(', ')}
@@ -626,7 +627,7 @@ export default function PracticePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <button
-                onClick={() => router.push('/lessons')}
+                onClick={() => router.push('/lesson')}
                 className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

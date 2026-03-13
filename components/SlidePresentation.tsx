@@ -6,7 +6,7 @@ import { useProgress } from '@/hooks/useProgress'
 import OscillationSimulation from './OscillationSimulation'
 import CircularMotionGraph from './simulator/CircularMotionGraph'
 import EnergySimulation from './simulator/EnergySimulation'
-import PendulumSimulation from './simulator/PendulumSimulation'
+import PendulumSimulation from './simulator/Chapter1/PendulumSimulation/PendulumSimulation'
 import ResonanceSimulation from './simulator/ResonanceSimulation'
 import SimulationModal from './SimulationModal'
 

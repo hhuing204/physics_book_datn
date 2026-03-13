@@ -137,7 +137,7 @@ const AISidebarSimple = () => {
     }, [messages]);
 
     // Gửi message đến API
-    const sendToAPI = async (message: string, endpoint: 'explain' | 'chat' = 'chat') => {
+    const sendToAPI = async (message: string) => {
         setIsLoading(true);
 
         // Thêm message của user
@@ -152,73 +152,136 @@ const AISidebarSimple = () => {
         setMessages(prev => [...prev, userMessage]);
         setInputMessage('');
 
-
         try {
-            let response;
-
-            if (endpoint === 'explain') {
-                // Gọi API explain
-                response = await fetch('/api/ai/explain', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        concept: message,
-                        level: 'cơ bản'
-                    })
-                });
-            } else {
-                // Gọi API chat tổng quát 
-                response = await fetch('/api/ai/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        message: message,
-                        context: {
-                            subject: 'Vật Lý 11',
-                            chapter: 'Dao Động Cơ'
-                        }
-                    })
-                });
-            }
+            // Cách 1: Dùng unified endpoint
+            const response = await fetch('/api/ai/query', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [...messages, userMessage].map(m => ({
+                        role: m.sender === 'user' ? 'user' : 'assistant',
+                        content: m.text
+                    }))
+                })
+            });
 
             const data = await response.json();
 
             if (data.success) {
+                let aiResponse = '';
+
+                // Xử lý theo type
+                switch (data.type) {
+                    case 'solve':
+                        aiResponse = `**🔢 GIẢI BÀI TẬP**\n\n${data.solution}`;
+                        break;
+                    case 'explain':
+                        aiResponse = `**📚 GIẢI THÍCH**\n\n${data.explanation}`;
+                        break;
+                    default:
+                        aiResponse = data.response;
+                }
+
                 const aiMessage: Message = {
                     id: messages.length + 2,
-                    text: endpoint === 'explain' ? data.explanation : data.answer,
+                    text: aiResponse,
                     sender: 'ai',
                     timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
                     type: 'explanation'
                 };
-                console.log(aiMessage.text)
+
                 setMessages(prev => [...prev, aiMessage]);
             } else {
-                throw new Error(data.message || data.error);
+                throw new Error(data.error);
             }
 
         } catch (error: any) {
-            console.error('API Error:', error);
+            // Fallback: thử từng endpoint
+            await tryFallbackEndpoints(message);
 
-            const errorMessage: Message = {
-                id: messages.length + 2,
-                text: `Lỗi: ${error.message}. API có thể chưa sẵn sàng. Bạn có thể thử hỏi câu khác.`,
-                sender: 'ai',
-                timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-                type: 'error'
-            };
-            setMessages(prev => [...prev, errorMessage]);
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Fallback: thử từng endpoint nếu unified endpoint lỗi
+    const tryFallbackEndpoints = async (message: string) => {
+        try {
+            // Thử solve trước
+            const solveRes = await fetch('/api/ai/solve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ problem: message })
+            });
+
+            if (solveRes.ok) {
+                const data = await solveRes.json();
+                if (data.success) {
+                    const aiMessage: Message = {
+                        id: messages.length + 2,
+                        text: `**🔢 GIẢI BÀI TẬP**\n\n${data.solution}`,
+                        sender: 'ai',
+                        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+                        type: 'explanation'
+                    };
+                    setMessages(prev => [...prev, aiMessage]);
+                    return;
+                }
+            }
+
+            // Thử explain
+            const explainRes = await fetch('/api/ai/explain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ concept: message })
+            });
+
+            if (explainRes.ok) {
+                const data = await explainRes.json();
+                if (data.success) {
+                    const aiMessage: Message = {
+                        id: messages.length + 2,
+                        text: `**📚 GIẢI THÍCH**\n\n${data.explanation}`,
+                        sender: 'ai',
+                        timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+                        type: 'explanation'
+                    };
+                    setMessages(prev => [...prev, aiMessage]);
+                    return;
+                }
+            }
+
+            // Cuối cùng thử chat
+            const chatRes = await fetch('/api/ai/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [{ role: 'user', content: message }]
+                })
+            });
+
+            if (chatRes.ok) {
+                const data = await chatRes.json();
+                const aiMessage: Message = {
+                    id: messages.length + 2,
+                    text: data.response || data.text || 'Không có phản hồi',
+                    sender: 'ai',
+                    timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+                    type: 'explanation'
+                };
+                setMessages(prev => [...prev, aiMessage]);
+            }
+
+        } catch (error) {
+            console.error('All endpoints failed:', error);
+        }
+    };
+
+
+
     // Xử lý gửi message
     const handleSendMessage = () => {
+        console.log(inputMessage)
         if (!inputMessage.trim() || isLoading) return;
 
         // Kiểm tra xem có phải khái niệm vật lý không
@@ -226,11 +289,12 @@ const AISidebarSimple = () => {
             inputMessage.toLowerCase().includes(concept.name.toLowerCase())
         );
 
-        if (isPhysicsConcept) {
-            sendToAPI(inputMessage, 'explain');
-        } else {
-            sendToAPI(inputMessage, 'chat');
-        }
+        // if (isPhysicsConcept) {
+        //     sendToAPI(inputMessage, 'explain');
+        // } else {
+        //     sendToAPI(inputMessage, 'chat');
+        // }
+        sendToAPI(inputMessage)
     };
 
     // Xử lý câu hỏi mẫu
@@ -240,7 +304,7 @@ const AISidebarSimple = () => {
 
     // Xử lý click khái niệm
     const handleConceptClick = (conceptName: string) => {
-        sendToAPI(conceptName, 'explain');
+        sendToAPI(conceptName);
     };
 
 

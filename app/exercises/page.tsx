@@ -136,7 +136,7 @@ export default function ExercisesPage() {
   }
 
   const handleBackToLessons = () => {
-    router.push('/lessons')
+    router.push('/lesson')
   }
 
   const handleBackToLessonSelect = () => {
