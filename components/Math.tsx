@@ -5,15 +5,17 @@ import { MathJax, MathJaxContext } from 'better-react-mathjax'
 interface MathFormulaProps {
   formula: string
   inline?: boolean
+  className?: string
 }
 
-export function MathFormula({ formula, inline = false }: MathFormulaProps) {
+export function MathFormula({ formula, inline = false, className = '' }: MathFormulaProps) {
+  // Đảm bảo formula không bị undefined
+  const cleanFormula = formula?.trim() || ''
+
   return (
-    <MathJaxContext>
-      <MathJax inline={inline} dynamic>
-        {`${inline ? '\\(' : '\\['} ${formula} ${inline ? '\\)' : '\\]'}`}
-      </MathJax>
-    </MathJaxContext>
+    <MathJax inline={inline} dynamic>
+      {`${inline ? '\\(' : '\\['} ${cleanFormula} ${inline ? '\\)' : '\\]'}`}
+    </MathJax>
   )
 }
 
@@ -23,17 +25,20 @@ interface MathProviderProps {
 
 export function MathProvider({ children }: MathProviderProps) {
   const config = {
-    loader: { load: ["[tex]/html"] },
+    loader: { load: ["[tex]/html", "input/tex", "output/chtml"] },
     tex: {
-      packages: { "[+]": ["html"] },
-      inlineMath: [
-        ["$", "$"],
-        ["\\(", "\\)"]
-      ],
-      displayMath: [
-        ["$$", "$$"],
-        ["\\[", "\\]"]
-      ]
+      packages: { "[+]": ["html", "ams", "newcommand"] },
+      inlineMath: [["$", "$"], ["\\(", "\\)"]],
+      displayMath: [["$$", "$$"], ["\\[", "\\]"]],
+      processEscapes: true,
+      processEnvironments: true,
+    },
+    options: {
+      ignoreHtmlClass: 'no-mathjax',
+      processHtmlClass: 'mathjax',
+    },
+    startup: {
+      typeset: false, // Để dynamic rendering
     }
   }
 

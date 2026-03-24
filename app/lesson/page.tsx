@@ -60,9 +60,7 @@ export default function LessonListPage() {
             '1': '⏰',
             '2': '🌊',
             '3': '⚡',
-            '4': '🧲',
-            '5': '💡',
-            '6': '🔍'
+            '4': '🧲'
         }
         return icons[chapterId] || '📚'
     }
@@ -72,9 +70,7 @@ export default function LessonListPage() {
             '1': 'from-blue-500 to-cyan-500',
             '2': 'from-cyan-500 to-teal-500',
             '3': 'from-yellow-500 to-orange-500',
-            '4': 'from-green-500 to-emerald-500',
-            '5': 'from-purple-500 to-pink-500',
-            '6': 'from-red-500 to-rose-500'
+            '4': 'from-green-500 to-emerald-500'
         }
         return colors[chapterId] || 'from-gray-500 to-gray-600'
     }
@@ -158,7 +154,7 @@ export default function LessonListPage() {
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {chapters.map((chapter) => (
                             <Link
-                                key={chapter._id}
+                                key={chapter._id.toString()}
                                 href={`/lesson/${chapter.chapterId}`}
                                 className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
                             >

@@ -3,6 +3,44 @@
 @tailwind utilities;
 
 /* Custom CSS chuyển đổi từ style.css gốc */
+/* app/globals.css */
+/* MathJax styles cho phần bài tập */
+.math-content .MathJax {
+  font-size: 1rem;
+  display: inline;
+}
+
+.math-content .MathJax_Display {
+  margin: 0.5em 0;
+  overflow-x: auto;
+  padding: 0.25em 0;
+}
+
+/* Dark mode */
+.dark .math-content .MathJax {
+  color: #e5e7eb;
+}
+
+.dark .math-content .MathJax * {
+  color: #e5e7eb !important;
+}
+
+/* Responsive cho công thức dài */
+.math-content .MathJax_Display {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+/* Tùy chỉnh cho các công thức trong bài tập */
+.exercise-question .MathJax_Display {
+  font-size: 1.1rem;
+  margin: 0.75rem 0;
+}
+
+.exercise-option .MathJax {
+  font-size: 0.95rem;
+}
 
 /* Fix font cho AI Sidebar */
 .ai-sidebar,

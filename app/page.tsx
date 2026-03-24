@@ -389,28 +389,12 @@ export default function Home() {
                 color: 'from-yellow-500 to-orange-500'
               },
               {
-                title: 'Từ trường',
+                title: 'Dòng điện không đổi',
                 icon: '🧲',
                 lessons: 5,
                 href: '/chuong-4',
                 gif: 'https://victory.com.vn/wp-content/uploads/2022/10/anh-huong-cua-dien-tu-truong-trong-cuoc-song-0-e1666254698782.jpg',
                 color: 'from-green-500 to-emerald-500'
-              },
-              {
-                title: 'Cảm ứng điện từ',
-                icon: '💡',
-                lessons: 4,
-                href: '/chuong-5',
-                gif: 'https://cdn-media.sforum.vn/storage/app/media/giangnguyen/c%E1%BA%A3m%20%E1%BB%A9ng%20%C4%91i%E1%BB%87n%20t%E1%BB%AB%20l%C3%A0%20g%C3%AC/cam-ung-dien-tu-la-gi-thumbnail.jpg',
-                color: 'from-purple-500 to-pink-500'
-              },
-              {
-                title: 'Quang hình học',
-                icon: '🔍',
-                lessons: 7,
-                href: '/chuong-6',
-                gif: 'http://www.daisonec.com/upload/B%E1%BB%99%20d%E1%BB%A5ng%20c%E1%BB%A5%20V%E1%BA%ADt%20L%C3%BD%20Quang%20h%C3%ACnh%202%20Quang%20h%C3%ACnh%20th%E1%BB%B1c%20h%C3%A0nh.jpg',
-                color: 'from-red-500 to-pink-500'
               }
             ].map((chapter, index) => (
               <Link

@@ -5,6 +5,10 @@ const ExerciseSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  chapterId: {
+    type: String,
+    required: true
+  },
   lessonId: {
     type: String,
     required: true
@@ -48,6 +52,7 @@ const ExerciseSchema = new mongoose.Schema({
 })
 
 // Index để tìm kiếm nhanh theo lessonId
+ExerciseSchema.index({ chapterId: 1 })
 ExerciseSchema.index({ lessonId: 1 })
 ExerciseSchema.index({ difficulty: 1 })
 

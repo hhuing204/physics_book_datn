@@ -1,3 +1,5 @@
+import { ObjectId } from "mongodb"
+
 export interface Slide {
   id: number
   title: string
@@ -19,7 +21,7 @@ export interface Lesson {
 }
 
 export interface Chapter {
-  _id: string
+  _id: ObjectId
   chapterId: string  // "1", "2", "3", ...
   title: string
   subtitle?: string
