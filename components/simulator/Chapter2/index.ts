@@ -1,0 +1,6 @@
+export { default as ElectromagneticWave3D } from './ElectromagneticWave3D/ElectromagneticWave3D'
+export { default as LongitudinalWave } from './LongitudinalWave/LongitudinalWave'
+export { default as SonarSimulation } from './SonarSimulation/SonarSimulation'
+export { default as WaveInterferencePattern } from './WaveInterferencePattern/WaveInterferencePattern'
+export { default as WaveOnString } from './WaveOnString/WaveOnString'
+export { default as WaveSimulation } from './WaveSimulation/WaveSimulation'

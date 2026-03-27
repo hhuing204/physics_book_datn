@@ -12,10 +12,14 @@ const ChapterSchema = new mongoose.Schema({
   },
   subtitle: String,
   icon: String,
-    theory: {
-      type: String,
-      required: false,
-    },
+  theory: {
+    type: String,
+    required: false,
+  },
+  color: {
+    start: { type: String, default: 'from-blue-500' },
+    end: { type: String, default: 'to-cyan-500' },
+  },
   content: {
     type: String,
     required: true,
