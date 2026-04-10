@@ -222,7 +222,7 @@ export default function LessonPage() {
                     Bài {lessonId}: {lesson.title}
                   </h1>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Chương {chapterId}: {chapter.title}
+                    {chapter.title}
                   </p>
                 </div>
               </div>
@@ -250,7 +250,7 @@ export default function LessonPage() {
             {/* Chapter info */}
             <div className="mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                Chương {chapterId}: {chapter.title}
+                {chapter.title}
               </h2>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
                 {chapter.lessons?.length || 0} bài học
@@ -359,8 +359,8 @@ export default function LessonPage() {
               onClick={handlePrevLesson}
               disabled={!chapter || chapter.lessons.findIndex(l => l.id === lessonId) <= 0}
               className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${!chapter || chapter.lessons.findIndex(l => l.id === lessonId) <= 0
-                  ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
-                  : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                 }`}
             >
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

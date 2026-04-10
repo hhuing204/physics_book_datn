@@ -303,9 +303,9 @@ export default function Home() {
                 <div className="text-white">
                   <div className="flex items-center space-x-2 mb-2">
                     <PlayCircle className="w-5 h-5" />
-                    <span className="font-semibold">Mô phỏng con lắc đơn 3D</span>
+                    <span className="font-semibold">Mô phỏng con lắc 3D</span>
                   </div>
-                  <p className="text-sm opacity-90">Kéo và thả để tương tác</p>
+                  <p className="text-sm opacity-90">Vào phần mô phỏng để tương tác và quan sát</p>
                 </div>
               </div>
             </div>
@@ -326,7 +326,7 @@ export default function Home() {
                 ].map((lesson, index) => (
                   <Link
                     key={index}
-                    href={`/lesson/${index + 1}`}
+                    href={`/lesson/1/${index + 1}`}
                     className="flex items-center p-4 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition group border border-gray-100 dark:border-gray-700"
                   >
                     <div className="relative w-12 h-12 rounded-lg overflow-hidden mr-4">
@@ -376,7 +376,7 @@ export default function Home() {
                 title: 'Sóng cơ',
                 icon: '🌊',
                 lessons: 8,
-                href: '/chuong-2',
+                href: '/lesson/2',
                 gif: 'https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&auto=format',
                 color: 'from-cyan-500 to-blue-500'
               },
@@ -384,7 +384,7 @@ export default function Home() {
                 title: 'Điện trường',
                 icon: '⚡',
                 lessons: 6,
-                href: '/chuong-3',
+                href: '/lesson/3',
                 gif: 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format',
                 color: 'from-yellow-500 to-orange-500'
               },
@@ -392,7 +392,7 @@ export default function Home() {
                 title: 'Dòng điện không đổi',
                 icon: '🧲',
                 lessons: 5,
-                href: '/chuong-4',
+                href: '/lesson/4',
                 gif: 'https://victory.com.vn/wp-content/uploads/2022/10/anh-huong-cua-dien-tu-truong-trong-cuoc-song-0-e1666254698782.jpg',
                 color: 'from-green-500 to-emerald-500'
               }
