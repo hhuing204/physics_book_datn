@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import UserMenu from '@/components/UserMenu'
 import { useProgress } from '@/hooks/useProgress'
 import Link from 'next/link'
 import axios from 'axios'
@@ -19,10 +18,8 @@ import { Chapter, Lesson } from '@/types/Chapter'
 
 export default function ChapterLessonsPage() {
     const [mounted, setMounted] = useState(false)
-    const [theme, setTheme] = useState('light')
     const [chapter, setChapter] = useState<Chapter | null>(null)
     const [loading, setLoading] = useState(true)
-    const [sidebarOpen, setSidebarOpen] = useState(false)
 
     const router = useRouter()
     const params = useParams()
@@ -32,16 +29,12 @@ export default function ChapterLessonsPage() {
 
     useEffect(() => {
         setMounted(true)
-        const savedTheme = localStorage.getItem('physics-book-theme') || 'light'
-        setTheme(savedTheme)
-        document.documentElement.className = savedTheme
         fetchChapter()
     }, [chapterId])
 
     const fetchChapter = async () => {
         try {
             setLoading(true)
-            // Gọi API với chapterId (số thứ tự)
             const res = await axios.get(`/api/chapters?chapterId=${chapterId}`)
             setChapter(res.data)
         } catch (error) {
@@ -49,13 +42,6 @@ export default function ChapterLessonsPage() {
         } finally {
             setLoading(false)
         }
-    }
-
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light'
-        setTheme(newTheme)
-        document.documentElement.className = newTheme
-        localStorage.setItem('physics-book-theme', newTheme)
     }
 
     const getDifficultyColor = (lessonId: string) => {
@@ -128,48 +114,19 @@ export default function ChapterLessonsPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            {/* Header */}
-            <header className="fixed top-0 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <div className="flex items-center space-x-4">
-                            <button
-                                onClick={() => router.push('/lesson')}
-                                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            >
-                                <ChevronLeft className="w-5 h-5" />
-                            </button>
-
-                            <div className="flex items-center space-x-3">
-                                <div className={`w-8 h-8 bg-gradient-to-r ${getChapterColor(chapter.chapterId)} rounded-lg flex items-center justify-center`}>
-                                    <span className="text-white font-bold">{chapter.chapterId}</span>
-                                </div>
-                                <div>
-                                    <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-                                        {chapter.title}
-                                    </h1>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                                        {chapter.lessons?.length || 0} bài học
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex items-center space-x-2">
-                            {user && <UserMenu user={user} />}
-                            <button
-                                onClick={toggleTheme}
-                                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            >
-                                {theme === 'light' ? '🌙' : '☀️'}
-                            </button>
-                        </div>
-                    </div>
+            {/* Main Content - Đã xóa header, thêm nút back trong content */}
+            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Nút quay lại - thay thế cho header back button */}
+                <div className="mb-6">
+                    <button
+                        onClick={() => router.push('/lesson')}
+                        className="inline-flex items-center space-x-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                        <span>Quay lại danh sách chương</span>
+                    </button>
                 </div>
-            </header>
 
-            {/* Main Content */}
-            <main className="pt-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
                 {/* Progress Overview */}
                 {lessonIds.length > 0 && (
                     <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 mb-8">
@@ -277,7 +234,6 @@ export default function ChapterLessonsPage() {
                 {chapter.lessons && chapter.lessons.length > 0 && (
                     <div className="mt-8 text-center">
                         <Link
-                            // href={`/practice/chapter-${chapter.chapterId}`}
                             href={`/practice`}
                             className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                         >

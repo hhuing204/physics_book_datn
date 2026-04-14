@@ -3,8 +3,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import AuthModal from '@/components/AuthModal'
-import UserMenu from '@/components/UserMenu'
 import Link from 'next/link'
 import axios from 'axios'
 import {
@@ -12,27 +10,19 @@ import {
     GraduationCap,
     ChevronRight,
     Sparkles,
-    Menu,
-    X,
     Loader2
 } from 'lucide-react'
 import { Chapter } from '@/types/Chapter'
 
 export default function LessonListPage() {
     const [mounted, setMounted] = useState(false)
-    const [theme, setTheme] = useState('light')
-    const [showAuthModal, setShowAuthModal] = useState(false)
     const [chapters, setChapters] = useState<Chapter[]>([])
     const [loading, setLoading] = useState(true)
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
     const router = useRouter()
     const { user, loading: authLoading } = useAuth()
 
     useEffect(() => {
         setMounted(true)
-        const savedTheme = localStorage.getItem('physics-book-theme') || 'light'
-        setTheme(savedTheme)
-        document.documentElement.className = savedTheme
         fetchChapters()
     }, [])
 
@@ -46,13 +36,6 @@ export default function LessonListPage() {
         } finally {
             setLoading(false)
         }
-    }
-
-    const toggleTheme = () => {
-        const newTheme = theme === 'light' ? 'dark' : 'light'
-        setTheme(newTheme)
-        document.documentElement.className = newTheme
-        localStorage.setItem('physics-book-theme', newTheme)
     }
 
     const getChapterIcon = (chapterId: string) => {
@@ -75,10 +58,11 @@ export default function LessonListPage() {
         return colors[chapterId] || 'from-gray-500 to-gray-600'
     }
 
-    // Redirect nếu chưa đăng nhập
+    // Kiểm tra đăng nhập và mở modal nếu cần
     useEffect(() => {
         if (mounted && !authLoading && !user) {
-            setShowAuthModal(true)
+            // Phát event để mở AuthModal từ Header
+            window.dispatchEvent(new CustomEvent('openAuthModal'))
         }
     }, [mounted, authLoading, user])
 
@@ -92,42 +76,8 @@ export default function LessonListPage() {
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-            {/* Header */}
-            <header className="fixed top-0 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 z-50">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center justify-between h-16">
-                        <Link href="/" className="flex items-center space-x-3 group">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                                <GraduationCap className="w-6 h-6 text-white" />
-                            </div>
-                            <span className="text-xl font-bold text-gray-900 dark:text-white">
-                                Vật Lý 11
-                            </span>
-                        </Link>
-
-                        <div className="flex items-center space-x-2">
-                            {user && <UserMenu user={user} />}
-
-                            <button
-                                onClick={toggleTheme}
-                                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                            >
-                                {theme === 'light' ? '🌙' : '☀️'}
-                            </button>
-
-                            <button
-                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                                className="md:hidden p-2 rounded-lg bg-gray-100 dark:bg-gray-700"
-                            >
-                                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </header>
-
-            {/* Main Content */}
-            <main className="pt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+            {/* Main Content - Đã xóa header, theme toggle, mobile menu */}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header section */}
                 <div className="mb-10">
                     <div className="inline-flex items-center px-4 py-2 bg-blue-100 dark:bg-blue-900/30 rounded-full text-blue-800 dark:text-blue-200 text-sm font-medium mb-4">
@@ -195,19 +145,6 @@ export default function LessonListPage() {
                     </div>
                 )}
             </main>
-
-            {/* Auth Modal */}
-            <AuthModal
-                isOpen={showAuthModal}
-                onClose={() => {
-                    setShowAuthModal(false)
-                    if (!user) router.push('/')
-                }}
-                onSuccess={() => {
-                    setShowAuthModal(false)
-                    fetchChapters()
-                }}
-            />
         </div>
     )
 }

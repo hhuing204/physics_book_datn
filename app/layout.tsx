@@ -3,7 +3,8 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { MathProvider } from '../components/Math'
 import { AuthProvider } from '../contexts/AuthContext'
-import AISidebarSimple from '@/components/AI/AISidebarSimple';
+import AISidebarSimple from '@/components/AI/AISidebarSimple'
+import ClientLayout from '@/components/ClientLayout' // Tạo component mới
 
 const inter = Inter({ subsets: ['latin', 'vietnamese'] })
 
@@ -40,7 +41,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthProvider>
           <MathProvider>
-            {children}
+            <ClientLayout>
+              {children}
+            </ClientLayout>
             {/* AI Sidebar - Chèn ở đây */}
             <AISidebarSimple />
           </MathProvider>

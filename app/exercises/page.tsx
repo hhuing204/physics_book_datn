@@ -4,8 +4,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams, useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import UserMenu from '@/components/UserMenu'
 import { MathFormula } from '@/components/Math'
+import * as Icons from 'lucide-react'
 
 interface Exercise {
   _id?: string
@@ -118,15 +118,15 @@ function RenderWithMath({ content }: { content: string }) {
   )
 }
 
-// Danh sách chương (cập nhật theo dữ liệu thực tế)
+// Danh sách chương với icon Lucide
 const chapters = [
-  { id: '1', title: 'Dao Động Cơ', icon: '⏰', color: 'from-blue-500 to-cyan-500' },
-  { id: '2', title: 'Sóng Cơ', icon: '🌊', color: 'from-cyan-500 to-teal-500' },
-  { id: '3', title: 'Điện Trường', icon: '⚡', color: 'from-yellow-500 to-orange-500' },
-  { id: '4', title: 'Dòng Điện Không Đổi', icon: '🧲', color: 'from-green-500 to-emerald-500' },
+  { id: '1', title: 'Dao Động Cơ', icon: Icons.Waves, color: 'from-blue-500 to-cyan-500', bgGlow: 'shadow-blue-500/20' },
+  { id: '2', title: 'Sóng Cơ', icon: Icons.Zap, color: 'from-cyan-500 to-teal-500', bgGlow: 'shadow-cyan-500/20' },
+  { id: '3', title: 'Điện Trường', icon: Icons.Bolt, color: 'from-yellow-500 to-orange-500', bgGlow: 'shadow-yellow-500/20' },
+  { id: '4', title: 'Dòng Điện Không Đổi', icon: Icons.CircuitBoard, color: 'from-green-500 to-emerald-500', bgGlow: 'shadow-green-500/20' },
 ]
 
-// Map lessonId -> lessonTitle (cập nhật theo dữ liệu từ JSON)
+// Map lessonId -> lessonTitle
 const lessonsByChapter: Record<string, { id: string; title: string }[]> = {
   '1': [
     { id: '1', title: 'Mô tả dao động' },
@@ -158,7 +158,6 @@ const lessonsByChapter: Record<string, { id: string; title: string }[]> = {
 
 export default function ExercisesPage() {
   const [mounted, setMounted] = useState(false)
-  const [theme, setTheme] = useState('light')
   const [loading, setLoading] = useState(true)
   const [allExercises, setAllExercises] = useState<Exercise[]>([])
   const [lessonCounts, setLessonCounts] = useState<LessonExerciseCount[]>([])
@@ -182,9 +181,6 @@ export default function ExercisesPage() {
 
   useEffect(() => {
     setMounted(true)
-    const savedTheme = localStorage.getItem('theme') || 'light'
-    setTheme(savedTheme)
-    document.documentElement.className = savedTheme
 
     if (chapterIdParam && chapters.some(c => c.id === chapterIdParam)) {
       setSelectedChapter(chapterIdParam)
@@ -222,7 +218,6 @@ export default function ExercisesPage() {
     }
   }
 
-  // Hàm lấy số lượng bài tập cho một bài học cụ thể
   const getExerciseCountForLesson = (chapterId: string, lessonId: string): number => {
     const countData = lessonCounts.find(
       lc => lc.chapterId === chapterId && lc.lessonId === lessonId
@@ -238,15 +233,7 @@ export default function ExercisesPage() {
     const exercises = allExercises.filter(
       ex => ex.chapterId === chapterId && ex.lessonId === lessonId
     )
-    // Trộn ngẫu nhiên các câu hỏi
     return shuffleArray([...exercises])
-  }
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.className = newTheme
   }
 
   const handleBackToLessons = () => {
@@ -400,10 +387,13 @@ export default function ExercisesPage() {
 
   if (!mounted || authLoading || loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">Đang tải bài tập...</p>
+          <div className="relative">
+            <div className="w-20 h-20 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4" />
+            <Icons.BookOpen className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-6 h-6 text-indigo-600 animate-pulse" />
+          </div>
+          <p className="text-gray-600 dark:text-gray-400 mt-4">Đang tải bài tập...</p>
         </div>
       </div>
     )
@@ -413,180 +403,144 @@ export default function ExercisesPage() {
     return null
   }
 
-  // Màn hình chọn chương
+  // ==================== MÀN HÌNH CHỌN CHƯƠNG ====================
   if (!selectedChapter) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
-        <header className="fixed top-0 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 z-50 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Luyện tập
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Chọn chương để bắt đầu
-                  </p>
-                </div>
-              </div>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          {/* Hero Section */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-full text-indigo-700 dark:text-indigo-300 text-sm font-medium mb-4">
+              <Icons.Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
+              <span>Luyện tập thông minh</span>
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold mb-4">
+              <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                Luyện tập Vật Lý 11
+              </span>
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              Chọn chương học để bắt đầu luyện tập với hàng trăm câu hỏi có lời giải chi tiết
+            </p>
+          </div>
 
-              <div className="flex items-center space-x-3">
-                {user && <UserMenu user={user} />}
+          {/* Chapters Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+            {chapters.map((chapter) => {
+              const lessonsInChapter = lessonsByChapter[chapter.id] || []
+              const totalExercises = lessonsInChapter.reduce((total, lesson) => {
+                return total + getExerciseCountForLesson(chapter.id, lesson.id)
+              }, 0)
+              const ChapterIcon = chapter.icon
+
+              return (
                 <button
-                  onClick={handleBackToLessons}
-                  className="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors flex items-center gap-2"
+                  key={chapter.id}
+                  onClick={() => handleChapterSelect(chapter.id)}
+                  className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 overflow-hidden hover:scale-105"
                 >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  Về danh sách bài học
+                  {/* Gradient Border Effect */}
+                  <div className={`absolute inset-0 bg-gradient-to-r ${chapter.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl blur-xl`} />
+
+                  <div className="relative bg-white dark:bg-gray-800 rounded-2xl p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className={`p-3 rounded-xl bg-gradient-to-r ${chapter.color} shadow-lg transform group-hover:scale-110 transition-transform duration-300`}>
+                        <ChapterIcon className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex items-center gap-1 text-sm">
+                        <Icons.BookOpen className="w-3 h-3 text-gray-400" />
+                        <span className="text-gray-500 dark:text-gray-400">{lessonsInChapter.length} bài</span>
+                      </div>
+                    </div>
+
+                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-left">
+                      Chương {chapter.id}: {chapter.title}
+                    </h3>
+
+                    <p className="text-gray-500 dark:text-gray-400 text-sm mb-4 text-left line-clamp-2">
+                      {chapter.id === '1' && 'Khám phá thế giới dao động cơ học qua các bài tập đa dạng'}
+                      {chapter.id === '2' && 'Tìm hiểu về sóng cơ và các hiện tượng giao thoa, sóng dừng'}
+                      {chapter.id === '3' && 'Nắm vững kiến thức về điện trường và tụ điện'}
+                      {chapter.id === '4' && 'Hiểu rõ về dòng điện, định luật Ohm và nguồn điện'}
+                    </p>
+
+                    <div className="flex items-center justify-between pt-4 border-t border-gray-100 dark:border-gray-700">
+                      <div className="flex items-center gap-2">
+                        <Icons.FileQuestion className="w-4 h-4 text-indigo-500" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {totalExercises} câu hỏi
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400 group-hover:gap-2 transition-all">
+                        <span className="text-sm font-medium">Luyện tập</span>
+                        <Icons.ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </div>
                 </button>
-                <button
-                  onClick={toggleTheme}
-                  className="p-2.5 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  {theme === 'light' ? '🌙' : '☀️'}
-                </button>
+              )
+            })}
+          </div>
+
+          {/* Overall Practice Section */}
+          <div className="mt-16 text-center">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl blur-2xl opacity-30" />
+              <div className="relative bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-8 text-white overflow-hidden">
+                <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+                <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
+
+                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="text-left">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icons.Trophy className="w-6 h-6 text-yellow-300" />
+                      <span className="text-yellow-300 font-semibold">Thử thách</span>
+                    </div>
+                    <h3 className="text-2xl md:text-3xl font-bold mb-2">Luyện tập tổng hợp</h3>
+                    <p className="text-indigo-100 max-w-md">
+                      Kiểm tra kiến thức tổng hợp với câu hỏi từ tất cả {chapters.length} chương
+                    </p>
+                  </div>
+                  <button
+                    onClick={handlePracticeOverall}
+                    className="px-8 py-3 bg-white text-indigo-600 rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
+                  >
+                    <Icons.Swords className="w-5 h-5" />
+                    <span>Bắt đầu thử thách</span>
+                    <Icons.ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </header>
 
-        <div className="pt-24 pb-12 px-4">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold text-blue-600 mb-4">
-                Luyện tập theo chương
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Mỗi chương có các bài học với số lượng câu hỏi khác nhau
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {chapters.map((chapter) => {
-                const lessonsInChapter = lessonsByChapter[chapter.id] || []
-                const totalExercises = lessonsInChapter.reduce((total, lesson) => {
-                  return total + getExerciseCountForLesson(chapter.id, lesson.id)
-                }, 0)
-
-                return (
-                  <button
-                    key={chapter.id}
-                    onClick={() => handleChapterSelect(chapter.id)}
-                    className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100 dark:border-gray-700 hover:scale-105 hover:-translate-y-1"
-                  >
-                    <div className={`h-32 bg-gradient-to-br ${chapter.color} relative overflow-hidden`}>
-                      <div className="absolute inset-0 bg-black/10"></div>
-                      <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
-                      <div className="relative h-full flex items-center justify-center">
-                        <div className="text-6xl opacity-90 transform group-hover:scale-110 transition-transform">
-                          {chapter.icon}
-                        </div>
-                      </div>
-                      <div className="absolute top-4 left-4">
-                        <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center border border-white/30">
-                          <span className="text-white font-bold text-lg">{chapter.id}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="p-6">
-                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {chapter.title}
-                      </h3>
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                          <span>{lessonsInChapter.length} bài học</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span>{totalExercises} câu hỏi</span>
-                        </div>
-                      </div>
-
-                      <div className={`flex items-center justify-between px-4 py-2 bg-gradient-to-r ${chapter.color} text-white rounded-lg font-medium group-hover:shadow-lg transition-shadow`}>
-                        <span>Bắt đầu</span>
-                        <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-
-            <div className="text-center mt-20 mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold text-purple-600 mb-4">
-                Luyện tập tổng hợp
-              </h2>
-              <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
-                Tất cả các dạng bài tập từ {chapters.length} chương
-              </p>
-            </div>
-
-            <div className="text-center mt-12">
-              <button
-                onClick={handlePracticeOverall}
-                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-2xl shadow-xl transform hover:scale-105 transition-all duration-200"
-              >
-                <span className="mr-3">📖</span>
-                Luyện tập tổng hợp
-                <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </button>
-              <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                Hoàn thành tất cả bài học để mở khóa phần luyện tập
-              </p>
-            </div>
-
-            <div className="mt-12 bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
-                  <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                    <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
-                  </div>
+          {/* Guide Section */}
+          <div className="mt-12 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
+                  <Icons.Lightbulb className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    Hướng dẫn làm bài
-                  </h3>
-                  <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                    <li className="flex items-start gap-2">
-                      <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>Số lượng câu hỏi được lấy trực tiếp từ database, tự động cập nhật khi có bài tập mới</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>Sử dụng phím số 1-4 để chọn đáp án nhanh với câu hỏi trắc nghiệm</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <svg className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
-                      <span>Xem giải thích chi tiết sau mỗi câu trả lời để hiểu rõ hơn</span>
-                    </li>
-                  </ul>
-                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                  Mẹo làm bài hiệu quả
+                  <span className="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full">Pro tip</span>
+                </h3>
+                <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                  <li className="flex items-start gap-2">
+                    <Icons.CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>Sử dụng phím số <kbd className="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs font-mono">1</kbd>-<kbd className="px-2 py-0.5 bg-gray-200 dark:bg-gray-700 rounded text-xs font-mono">4</kbd> để chọn đáp án nhanh</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Icons.CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>Xem giải thích chi tiết sau mỗi câu để hiểu rõ bản chất</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <Icons.CheckCircle2 className="w-4 h-4 text-green-500 flex-shrink-0 mt-0.5" />
+                    <span>Theo dõi tiến độ và luyện tập lại những câu sai</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -595,114 +549,104 @@ export default function ExercisesPage() {
     )
   }
 
-  // Màn hình chọn bài học trong chương
+  // ==================== MÀN HÌNH CHỌN BÀI HỌC ====================
   if (selectedChapter && !selectedLesson) {
     const currentChapter = chapters.find(c => c.id === selectedChapter)
     const lessons = lessonsByChapter[selectedChapter] || []
+    const ChapterIcon = currentChapter?.icon || Icons.BookOpen
 
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <header className="fixed top-0 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 z-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={handleBackToChapters}
-                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                </button>
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-                    Chương {selectedChapter}: {currentChapter?.title}
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Chọn bài học để luyện tập
-                  </p>
-                </div>
-              </div>
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Back Button */}
+          <button
+            onClick={handleBackToChapters}
+            className="group mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all border border-gray-200 dark:border-gray-700"
+          >
+            <Icons.ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+            <span>Quay lại danh sách chương</span>
+          </button>
 
-              <div className="flex items-center space-x-2">
-                {user && <UserMenu user={user} />}
-                <button
-                  onClick={toggleTheme}
-                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                >
-                  {theme === 'light' ? '🌙' : '☀️'}
-                </button>
-              </div>
+          {/* Chapter Header */}
+          <div className="mb-8 flex items-center gap-4">
+            <div className={`p-3 rounded-xl bg-gradient-to-r ${currentChapter?.color} shadow-lg`}>
+              {ChapterIcon && <ChapterIcon className="w-6 h-6 text-white" />}
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Chương {selectedChapter}: {currentChapter?.title}
+              </h1>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">
+                Chọn bài học để bắt đầu luyện tập
+              </p>
             </div>
           </div>
-        </header>
 
-        <div className="pt-24 pb-12 px-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {lessons.map((lesson, index) => {
-                const colors = [
-                  { from: 'from-blue-500', to: 'to-cyan-500' },
-                  { from: 'from-purple-500', to: 'to-pink-500' },
-                  { from: 'from-green-500', to: 'to-emerald-500' },
-                  { from: 'from-orange-500', to: 'to-red-500' }
-                ]
-                const color = colors[index % colors.length]
-                const exerciseCount = getExerciseCountForLesson(selectedChapter, lesson.id)
-                const estimatedTime = Math.ceil(exerciseCount / 2)
+          {/* Lessons Grid */}
+          <div className="grid grid-cols-1 gap-4">
+            {lessons.map((lesson, index) => {
+              const exerciseCount = getExerciseCountForLesson(selectedChapter, lesson.id)
+              const estimatedTime = Math.ceil(exerciseCount / 2)
+              const colors = [
+                'from-blue-500 to-cyan-500',
+                'from-purple-500 to-pink-500',
+                'from-green-500 to-emerald-500',
+                'from-orange-500 to-red-500'
+              ]
+              const color = colors[index % colors.length]
 
-                return (
-                  <button
-                    key={lesson.id}
-                    onClick={() => handleLessonSelect(lesson.id, lesson.title)}
-                    className={`group bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700 ${exerciseCount > 0 ? 'hover:scale-105 hover:-translate-y-1' : 'opacity-60 cursor-not-allowed'
-                      }`}
-                    disabled={exerciseCount === 0}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`w-12 h-12 bg-gradient-to-r ${color.from} ${color.to} rounded-xl flex items-center justify-center text-white font-bold text-lg`}>
-                        {lesson.id}
-                      </div>
-                      <div className="flex-1 text-left">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-600 transition">
-                          Bài {lesson.id}: {lesson.title}
-                        </h3>
-                        <div className="flex items-center gap-3 mt-1">
-                          <p className="text-sm text-gray-500 dark:text-gray-400">
-                            {exerciseCount} câu hỏi
-                          </p>
-                          {exerciseCount > 0 && (
-                            <p className="text-xs text-gray-400 dark:text-gray-500">
-                              ~{estimatedTime} phút
-                            </p>
-                          )}
+              return (
+                <button
+                  key={lesson.id}
+                  onClick={() => handleLessonSelect(lesson.id, lesson.title)}
+                  disabled={exerciseCount === 0}
+                  className={`group w-full bg-white dark:bg-gray-800 rounded-xl p-5 shadow-md hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700 ${exerciseCount > 0 ? 'hover:scale-[1.02]' : 'opacity-60 cursor-not-allowed'
+                    }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-14 h-14 bg-gradient-to-r ${color} rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md`}>
+                      {lesson.id}
+                    </div>
+                    <div className="flex-1 text-left">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+                        Bài {lesson.id}: {lesson.title}
+                      </h3>
+                      <div className="flex items-center gap-3 mt-1">
+                        <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                          <Icons.FileQuestion className="w-3.5 h-3.5" />
+                          <span>{exerciseCount} câu hỏi</span>
                         </div>
-                        {exerciseCount === 0 && (
-                          <p className="text-xs text-red-500 mt-1">
-                            Chưa có bài tập
-                          </p>
+                        {exerciseCount > 0 && (
+                          <div className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+                            <Icons.Clock className="w-3.5 h-3.5" />
+                            <span>~{estimatedTime} phút</span>
+                          </div>
                         )}
                       </div>
-                      {exerciseCount > 0 && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg group-hover:bg-blue-500 group-hover:text-white transition">
-                          <span>Bắt đầu</span>
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </div>
+                      {exerciseCount === 0 && (
+                        <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+                          <Icons.AlertCircle className="w-3 h-3" />
+                          Chưa có bài tập
+                        </p>
                       )}
                     </div>
-                  </button>
-                )
-              })}
-            </div>
+                    {exerciseCount > 0 && (
+                      <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl group-hover:bg-indigo-600 transition-all">
+                        <span className="text-indigo-600 dark:text-indigo-400 group-hover:text-white font-medium">Làm bài</span>
+                        <Icons.ArrowRight className="w-4 h-4 text-indigo-600 dark:text-indigo-400 group-hover:text-white group-hover:translate-x-1 transition-all" />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
           </div>
         </div>
       </div>
     )
   }
 
-  // Màn hình làm bài tập
+  // ==================== MÀN HÌNH LÀM BÀI TẬP ====================
   const exercise = getCurrentExercise()
   const exercisesList = getCurrentExercises()
   const currentLesson = selectedLesson ? lessonsByChapter[selectedChapter!]?.find(l => l.id === selectedLesson) : null
@@ -715,57 +659,64 @@ export default function ExercisesPage() {
     const percentage = Math.round((score / exercisesList.length) * 100)
 
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 px-4">
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 py-12 px-4">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
+          <button
+            onClick={handleBackToLessonsList}
+            className="mb-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all"
+          >
+            <Icons.ArrowLeft className="w-4 h-4" />
+            <span>Chọn bài khác</span>
+          </button>
+
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+            <div className="relative inline-block mb-6">
+              <div className="w-24 h-24 bg-gradient-to-r from-green-400 to-blue-500 rounded-full flex items-center justify-center mx-auto shadow-lg animate-bounce">
+                <Icons.Trophy className="w-12 h-12 text-white" />
               </div>
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Hoàn thành!
-              </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                Chương {selectedChapter} - Bài {selectedLesson}: {currentLesson?.title}
-              </p>
+              <div className="absolute -top-2 -right-2 w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center text-lg animate-ping-slow">
+                ⭐
+              </div>
             </div>
 
-            <div className="space-y-4 mb-8">
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-300">Điểm số:</span>
-                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {score}/{exercisesList.length}
-                </span>
-              </div>
+            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Hoàn thành xuất sắc!
+            </h2>
+            <p className="text-gray-500 dark:text-gray-400 mb-8">
+              Chương {selectedChapter} - Bài {selectedLesson}: {currentLesson?.title}
+            </p>
 
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-300">Tỉ lệ đúng:</span>
-                <span className="text-2xl font-bold text-green-600 dark:text-green-400">
-                  {percentage}%
-                </span>
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                <Icons.Star className="w-5 h-5 text-yellow-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{score}/{exercisesList.length}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Điểm số</div>
               </div>
-
-              <div className="flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <span className="text-gray-600 dark:text-gray-300">Thời gian:</span>
-                <span className="text-xl font-semibold text-gray-900 dark:text-white">
-                  {minutes}:{seconds.toString().padStart(2, '0')}
-                </span>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                <Icons.TrendingUp className="w-5 h-5 text-green-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{percentage}%</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Tỉ lệ đúng</div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                <Icons.Clock className="w-5 h-5 text-blue-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">{minutes}:{seconds.toString().padStart(2, '0')}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Thời gian</div>
               </div>
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={handleBackToLessonsList}
-                className="flex-1 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium transition-colors"
+                className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
               >
+                <Icons.BookOpen className="w-4 h-4" />
                 Chọn bài khác
               </button>
               <button
                 onClick={handleRestart}
-                className="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
               >
+                <Icons.RefreshCw className="w-4 h-4" />
                 Làm lại
               </button>
             </div>
@@ -777,294 +728,229 @@ export default function ExercisesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <header className="fixed top-0 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleBackToLessonsList}
-                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-              </button>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-                  Bài tập
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Chương {selectedChapter} - Bài {selectedLesson}: {currentLesson?.title} ({exercisesList.length} câu)
-                </p>
-              </div>
-            </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Back Button */}
+        <button
+          onClick={handleBackToLessonsList}
+          className="group mb-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-all border border-gray-200 dark:border-gray-700"
+        >
+          <Icons.ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          <span>Quay lại danh sách bài học</span>
+        </button>
 
-            <div className="flex items-center space-x-2">
-              {user && <UserMenu user={user} />}
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                {theme === 'light' ? '🌙' : '☀️'}
-              </button>
-            </div>
+        {/* Header Info */}
+        <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+              <Icons.FileQuestion className="w-6 h-6 text-indigo-600" />
+              Bài tập
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 mt-1">
+              Chương {selectedChapter} - Bài {selectedLesson}: {currentLesson?.title}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+            <Icons.Crown className="w-4 h-4 text-yellow-500" />
+            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+              {exercisesList.length} câu hỏi
+            </span>
           </div>
         </div>
-      </header>
 
-      <div className="pt-20 pb-8 px-4">
-        <div className="max-w-5xl mx-auto">
-          {exercise && (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
-              {/* Progress Bar */}
-              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 dark:from-blue-900/30 dark:to-purple-900/30 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between items-center mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      Câu {currentExercise + 1}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">/ {exercisesList.length}</span>
-                  </div>
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-                    <svg className="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
-                      {score}/{exercisesList.length}
+        {exercise && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700">
+            {/* Progress Header */}
+            <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">
+                      {currentExercise + 1}
                     </span>
                   </div>
+                  <span className="text-gray-500 dark:text-gray-400">/ {exercisesList.length}</span>
                 </div>
-                <div className="relative w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${((currentExercise + 1) / exercisesList.length) * 100}%` }}
-                  >
-                    <div className="absolute inset-0 bg-white/30 animate-pulse"></div>
-                  </div>
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-white dark:bg-gray-800 rounded-lg shadow-sm">
+                  <Icons.Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">
+                    {score}/{exercisesList.length}
+                  </span>
                 </div>
               </div>
+              <div className="relative w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                <div
+                  className="absolute top-0 left-0 h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500 ease-out"
+                  style={{ width: `${((currentExercise + 1) / exercisesList.length) * 100}%` }}
+                />
+              </div>
+            </div>
 
-              {/* Question Content */}
-              <div className="p-8">
-                {/* Tags */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-                    </svg>
-                    {exercise.category}
-                  </span>
-                  <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border ${exercise.difficulty === 'basic'
-                      ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800'
-                      : exercise.difficulty === 'intermediate'
-                        ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800'
-                        : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800'
-                    }`}>
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
-                    </svg>
-                    {exercise.difficulty === 'basic' ? 'Cơ bản' : exercise.difficulty === 'intermediate' ? 'Trung bình' : 'Nâng cao'}
-                  </span>
-                </div>
+            {/* Question Content */}
+            <div className="p-6 md:p-8">
+              {/* Tags */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300">
+                  <Icons.Tag className="w-3 h-3" />
+                  {exercise.category}
+                </span>
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border ${exercise.difficulty === 'basic'
+                  ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 border-green-200'
+                  : exercise.difficulty === 'intermediate'
+                    ? 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 border-yellow-200'
+                    : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300 border-red-200'
+                  }`}>
+                  {exercise.difficulty === 'basic' ? 'Cơ bản' : exercise.difficulty === 'intermediate' ? 'Trung bình' : 'Nâng cao'}
+                </span>
+              </div>
 
-                {/* Question */}
-                <div className="mb-8">
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white leading-relaxed">
-                    <RenderWithMath content={exercise.question} />
-                  </h3>
-                </div>
+              {/* Question */}
+              <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+                <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white leading-relaxed">
+                  <RenderWithMath content={exercise.question} />
+                </h3>
+              </div>
 
-                {/* Answer Options */}
-                {exercise.type === 'multiple-choice' && exercise.options ? (
-                  <div className="space-y-3">
-                    {exercise.options.map((option, index) => {
-                      const isSelected = selectedAnswer === index.toString()
-                      const isCorrect = index.toString() === exercise.correctAnswer.toString()
+              {/* Answer Options */}
+              {exercise.type === 'multiple-choice' && exercise.options ? (
+                <div className="space-y-3">
+                  {exercise.options.map((option, index) => {
+                    const isSelected = selectedAnswer === index.toString()
+                    const isCorrect = index.toString() === exercise.correctAnswer.toString()
+                    const letters = ['A', 'B', 'C', 'D']
 
-                      let buttonClass = 'group relative w-full text-left p-5 rounded-xl border-2 transition-all duration-200 '
+                    let buttonClass = 'group relative w-full text-left p-4 rounded-xl border-2 transition-all duration-200 '
 
-                      if (showResult) {
-                        if (isCorrect) {
-                          buttonClass += 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-md'
-                        } else if (isSelected) {
-                          buttonClass += 'border-red-500 bg-red-50 dark:bg-red-900/20 shadow-md'
-                        } else {
-                          buttonClass += 'border-gray-200 dark:border-gray-700 opacity-60'
-                        }
+                    if (showResult) {
+                      if (isCorrect) {
+                        buttonClass += 'border-green-500 bg-green-50 dark:bg-green-900/20 shadow-md'
+                      } else if (isSelected) {
+                        buttonClass += 'border-red-500 bg-red-50 dark:bg-red-900/20 shadow-md'
                       } else {
-                        buttonClass += isSelected
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md scale-102'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-600 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:shadow-sm'
+                        buttonClass += 'border-gray-200 dark:border-gray-700 opacity-60'
                       }
+                    } else {
+                      buttonClass += isSelected
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 shadow-md'
+                        : 'border-gray-200 dark:border-gray-700 hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    }
 
-                      return (
-                        <button
-                          key={index}
-                          onClick={() => handleAnswerSelect(index.toString())}
-                          disabled={showResult}
-                          className={buttonClass}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className={`flex-shrink-0 w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-colors ${showResult && isCorrect
-                                ? 'border-green-500 bg-green-500 text-white'
-                                : showResult && isSelected
-                                  ? 'border-red-500 bg-red-500 text-white'
-                                  : isSelected
-                                    ? 'border-blue-500 bg-blue-500 text-white'
-                                    : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-400 group-hover:border-blue-400 group-hover:text-blue-600'
-                              }`}>
-                              {index + 1}
-                            </div>
-                            <span className="flex-1 text-gray-900 dark:text-white font-medium">
-                              <RenderWithMath content={option} />
-                            </span>
-                            {showResult && isCorrect && (
-                              <svg className="w-6 h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                            {showResult && isSelected && !isCorrect && (
-                              <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                            )}
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswerSelect(index.toString())}
+                        disabled={showResult}
+                        className={buttonClass}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`flex-shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-sm transition-all ${showResult && isCorrect
+                            ? 'border-green-500 bg-green-500 text-white'
+                            : showResult && isSelected
+                              ? 'border-red-500 bg-red-500 text-white'
+                              : isSelected
+                                ? 'border-indigo-500 bg-indigo-500 text-white'
+                                : 'border-gray-300 text-gray-600 group-hover:border-indigo-400'
+                            }`}>
+                            {letters[index]}
                           </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                ) : exercise.type === 'calculation' ? (
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={selectedAnswer}
-                      onChange={(e) => handleAnswerSelect(e.target.value)}
-                      disabled={showResult}
-                      placeholder="Nhập kết quả tính toán của bạn..."
-                      className="w-full p-5 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 focus:outline-none transition-all text-lg font-medium"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                      </svg>
-                    </div>
-                  </div>
-                ) : null}
-
-                {/* Result Explanation */}
-                {showResult && (
-                  <div className={`mt-6 p-5 rounded-xl border-2 ${selectedAnswer === exercise.correctAnswer.toString()
-                      ? 'bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-300 dark:border-green-800'
-                      : 'bg-gradient-to-br from-red-50 to-orange-50 dark:from-red-900/20 dark:to-orange-900/20 border-red-300 dark:border-red-800'
-                    }`}>
-                    <div className="flex items-start gap-3">
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${selectedAnswer === exercise.correctAnswer.toString() ? 'bg-green-500' : 'bg-red-500'
-                        }`}>
-                        {selectedAnswer === exercise.correctAnswer.toString() ? (
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`font-bold text-lg mb-2 ${selectedAnswer === exercise.correctAnswer.toString()
-                            ? 'text-green-800 dark:text-green-200'
-                            : 'text-red-800 dark:text-red-200'
-                          }`}>
-                          {selectedAnswer === exercise.correctAnswer.toString() ? 'Chính xác! Tuyệt vời!' : 'Chưa chính xác'}
-                        </p>
-                        <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed mb-2">
-                          <strong>Giải thích:</strong> <RenderWithMath content={exercise.explanation} />
-                        </p>
-                        {selectedAnswer !== exercise.correctAnswer.toString() && (
-                          <div className="mt-3 pt-3 border-t border-red-200 dark:border-red-800">
-                            <p className="text-gray-700 dark:text-gray-300 text-sm">
-                              <strong className="text-red-700 dark:text-red-300">Đáp án đúng:</strong>{' '}
-                              <span className="font-semibold">
-                                {exercise.type === 'multiple-choice' && exercise.options ? (
-                                  <>
-                                    {parseInt(exercise.correctAnswer.toString()) + 1}.{' '}
-                                    <RenderWithMath content={exercise.options[parseInt(exercise.correctAnswer.toString())]} />
-                                  </>
-                                ) : (
-                                  <RenderWithMath content={exercise.correctAnswer.toString()} />
-                                )}
-                              </span>
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Action Buttons */}
-                <div className="mt-8 flex gap-3">
-                  <button
-                    onClick={handlePrevious}
-                    disabled={currentExercise === 0}
-                    className="px-6 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2 shadow-sm hover:shadow-md"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                    </svg>
-                    Câu trước
-                  </button>
-
-                  {!showResult ? (
-                    <button
-                      onClick={handleSubmit}
-                      disabled={!selectedAnswer}
-                      className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:from-gray-400 disabled:to-gray-400 text-white rounded-xl font-semibold transition-all disabled:cursor-not-allowed shadow-lg hover:shadow-xl disabled:shadow-none flex items-center justify-center gap-2"
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      Kiểm tra câu trả lời
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleNext}
-                      className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl font-semibold transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2"
-                    >
-                      {currentExercise === exercisesList.length - 1 ? (
-                        <>
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Hoàn thành bài tập
-                        </>
-                      ) : (
-                        <>
-                          Câu tiếp theo
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
-                        </>
-                      )}
-                    </button>
-                  )}
+                          <span className="flex-1 text-gray-800 dark:text-gray-200">
+                            <RenderWithMath content={option} />
+                          </span>
+                          {showResult && isCorrect && (
+                            <Icons.CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
+                          )}
+                          {showResult && isSelected && !isCorrect && (
+                            <Icons.XCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                          )}
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
+              ) : exercise.type === 'calculation' ? (
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={selectedAnswer}
+                    onChange={(e) => handleAnswerSelect(e.target.value)}
+                    disabled={showResult}
+                    placeholder="Nhập kết quả tính toán của bạn..."
+                    className="w-full p-4 border-2 border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none transition-all"
+                  />
+                  <Icons.Calculator className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+                </div>
+              ) : null}
 
-                {/* Keyboard Hint */}
-                {exercise.type === 'multiple-choice' && !showResult && (
-                  <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-100 dark:border-blue-900">
-                    <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                      </svg>
-                      <span className="font-medium">Mẹo: Nhấn phím <kbd className="px-2 py-1 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-800 font-mono text-xs">1</kbd>-<kbd className="px-2 py-1 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-800 font-mono text-xs">4</kbd> để chọn đáp án nhanh</span>
+              {/* Result Explanation */}
+              {showResult && (
+                <div className={`mt-6 p-5 rounded-xl border-2 ${selectedAnswer === exercise.correctAnswer.toString()
+                  ? 'border-green-300 bg-green-50 dark:bg-green-900/20'
+                  : 'border-red-300 bg-red-50 dark:bg-red-900/20'
+                  }`}>
+                  <div className="flex items-start gap-3">
+                    <div className="flex-shrink-0">
+                      {selectedAnswer === exercise.correctAnswer.toString() ? (
+                        <Icons.CheckCircle2 className="w-6 h-6 text-green-500" />
+                      ) : (
+                        <Icons.XCircle className="w-6 h-6 text-red-500" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className={`font-bold text-lg mb-2 ${selectedAnswer === exercise.correctAnswer.toString()
+                        ? 'text-green-700 dark:text-green-300'
+                        : 'text-red-700 dark:text-red-300'
+                        }`}>
+                        {selectedAnswer === exercise.correctAnswer.toString() ? 'Chính xác! Tuyệt vời!' : 'Chưa chính xác'}
+                      </p>
+                      <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
+                        <strong>Giải thích:</strong> <RenderWithMath content={exercise.explanation} />
+                      </p>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="mt-8 flex gap-3">
+                <button
+                  onClick={handlePrevious}
+                  disabled={currentExercise === 0}
+                  className="px-5 py-3 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-all font-medium flex items-center gap-2"
+                >
+                  <Icons.ChevronLeft className="w-4 h-4" />
+                  Câu trước
+                </button>
+
+                {!showResult ? (
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!selectedAnswer}
+                    className="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-400 disabled:to-gray-400 text-white rounded-xl font-semibold transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Icons.CheckCircle className="w-5 h-5" />
+                    Kiểm tra câu trả lời
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleNext}
+                    className="flex-1 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl font-semibold transition-all flex items-center justify-center gap-2"
+                  >
+                    {currentExercise === exercisesList.length - 1 ? (
+                      <>
+                        <Icons.Trophy className="w-5 h-5" />
+                        Hoàn thành bài tập
+                      </>
+                    ) : (
+                      <>
+                        Câu tiếp theo
+                        <Icons.ChevronRight className="w-5 h-5" />
+                      </>
+                    )}
+                  </button>
                 )}
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

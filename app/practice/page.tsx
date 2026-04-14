@@ -622,40 +622,7 @@ export default function PracticePage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <header className="fixed top-0 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => router.push('/lesson')}
-                className="flex items-center space-x-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span className="font-medium">Quay lại</span>
-              </button>
-              <div className="h-6 w-px bg-gray-300 dark:bg-gray-600"></div>
-              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Luyện tập</h1>
-            </div>
 
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-600 dark:text-gray-300">
-                <span className="font-semibold">Điểm: </span>
-                <span className="text-blue-600 dark:text-blue-400 font-bold">{score}</span>
-                <span className="mx-1">/</span>
-                <span>{currentExercise + (showResult ? 1 : 0)}</span>
-              </div>
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              >
-                {theme === 'light' ? '🌙' : '☀️'}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
 
       {/* Progress Bar */}
       <div className="fixed top-[73px] left-0 w-full h-2 bg-gray-200 dark:bg-gray-700 z-40">

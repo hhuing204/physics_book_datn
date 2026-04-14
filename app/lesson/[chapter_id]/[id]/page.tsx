@@ -12,7 +12,6 @@ import { Chapter, Lesson, Slide } from '@/types/Chapter'
 
 export default function LessonPage() {
   const [mounted, setMounted] = useState(false)
-  const [theme, setTheme] = useState('light')
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [chapter, setChapter] = useState<Chapter | null>(null)
   const [lesson, setLesson] = useState<Lesson | null>(null)
@@ -35,10 +34,6 @@ export default function LessonPage() {
 
   useEffect(() => {
     setMounted(true)
-    const savedTheme = localStorage.getItem('physics-book-theme') || 'light'
-    setTheme(savedTheme)
-    document.documentElement.className = savedTheme
-
     if (chapterId && lessonId) {
       fetchLesson()
     }
@@ -83,13 +78,6 @@ export default function LessonPage() {
       (window as any).MathJax.typesetPromise?.()
     }
   }, [lesson])
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light'
-    setTheme(newTheme)
-    document.documentElement.className = newTheme
-    localStorage.setItem('physics-book-theme', newTheme)
-  }
 
   const handleBackToChapter = () => {
     router.push(`/lesson/${chapterId}`)
@@ -199,44 +187,7 @@ export default function LessonPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <header className="fixed top-0 w-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-                className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors lg:hidden"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-
-              <div className="flex items-center space-x-3">
-                <div className={`w-8 h-8 bg-gradient-to-r ${getChapterColor(chapterId)} rounded-lg flex items-center justify-center`}>
-                  <span className="text-white font-bold text-sm">{chapterId}</span>
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900 dark:text-white">
-                    Bài {lessonId}: {lesson.title}
-                  </h1>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {chapter.title}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
-          </div>
-        </div>
-      </header>
+      {/* Đã xóa header fixed - sử dụng header chung từ layout */}
 
       {/* Sidebar with lesson slides */}
       <div className="fixed left-0 top-16 h-[calc(100vh-4rem)] w-80 z-40">
@@ -311,9 +262,9 @@ export default function LessonPage() {
       </div>
 
       {/* Main Content */}
-      <main className="transition-all duration-300 pt-16 ml-0">
+      <main className="transition-all duration-300 ml-0">
         <div className="max-w-4xl mx-auto p-6">
-          {/* Navigation breadcrumb */}
+          {/* Breadcrumb navigation */}
           <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300 mb-6">
             <button
               onClick={() => router.push('/')}
@@ -337,12 +288,12 @@ export default function LessonPage() {
             </button>
             <span>›</span>
             <span className="text-blue-600 dark:text-blue-400">
-              Bài {lessonId}
+              Bài {lessonId}: {lesson.title}
             </span>
           </div>
 
           {/* Slide Presentation */}
-          <div className="h-[calc(100vh-8rem)]">
+          <div className="h-[calc(100vh-10rem)]">
             <SlidePresentation
               ref={slideRef}
               slides={lesson.slides || []}
