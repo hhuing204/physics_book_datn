@@ -119,13 +119,13 @@ function SongDocVisualization({
                 return (
                     <mesh key={idx} position={[x, 0, 0]}>
                         <sphereGeometry args={[0.1, 16, 16]} />
-                        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.2} />
+                        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.25} />
                     </mesh>
                 )
             })}
 
             {/* Vùng nén/giãn */}
-            {showCompression && compressionZones.map((zone, idx) => (
+            {/* {showCompression && compressionZones.map((zone, idx) => (
                 <mesh key={`zone-${idx}`} position={[zone.x, 0.5, 0]}>
                     <sphereGeometry args={[0.08 + zone.intensity * 0.05, 8, 8]} />
                     <meshStandardMaterial
@@ -142,7 +142,7 @@ function SongDocVisualization({
                         </div>
                     </Html>
                 </mesh>
-            ))}
+            ))} */}
 
             {/* MIỆNG (nguồn phát) */}
             <mesh position={[-4.2, 0.2, 0]}>
@@ -287,24 +287,19 @@ function SongNgangVisualization({
             ))}
 
             {/* Đường sóng hình sin khi nhìn ngang */}
-            <Line points={sideWavePoints} color="#3b82f6" lineWidth={3} />
+            {/* <Line points={sideWavePoints} color="#3b82f6" lineWidth={3} />
             <Line points={[[-5, 0.5, -3.5], [5, 0.5, -3.5]]} color="#6b7280" lineWidth={1} dashed />
             <Html position={[0, 1.2, -3.5]} center>
                 <div className="bg-blue-500/90 text-white text-xs px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm">
                     🌊 Sóng hình sin (nhìn ngang)
                 </div>
-            </Html>
+            </Html> */}
 
             {/* Quả bóng rơi ở tâm */}
             <mesh position={[0, 0.15, 0]}>
                 <sphereGeometry args={[0.18, 32, 32]} />
                 <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.2} />
             </mesh>
-            <Html position={[0, 0.5, 0]} center>
-                <div className="bg-red-500/90 text-white text-xs px-3 py-1.5 rounded-full shadow-lg backdrop-blur-sm">
-                    💧 Điểm rơi
-                </div>
-            </Html>
 
             {/* Phương truyền sóng */}
             <Line points={[[-5, -0.8, 0], [5, -0.8, 0]]} color="#3b82f6" lineWidth={2} />
