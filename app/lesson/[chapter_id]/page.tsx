@@ -161,7 +161,7 @@ export default function ChapterLessonsPage() {
                     <div className="absolute -left-16 -bottom-16 w-40 h-40 bg-white/10 rounded-full"></div>
 
                     <div className="relative z-10">
-                        <span className="text-6xl mb-4 block">{chapter.icon || getChapterIcon(chapter.chapterId)}</span>
+                        <img src={chapter.icon} alt="icon" width={32} height={32} />
                         <h2 className="text-3xl font-bold mb-2">{chapter.title}</h2>
                         <p className="text-white/90 max-w-2xl">{chapter.subtitle || chapter.description || `Chương ${chapter.chapterId}: ${chapter.title}`}</p>
                     </div>

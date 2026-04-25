@@ -113,7 +113,7 @@ export default function LessonListPage() {
                                     <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full"></div>
 
                                     <div className="relative z-10">
-                                        <span className="text-4xl mb-2 block">{chapter.icon || getChapterIcon(chapter.chapterId)}</span>
+                                        <img src={chapter.icon} alt="icon" width={32} height={32} />
                                         <h2 className="text-2xl font-bold text-white">
                                             Chương {chapter.chapterId}
                                         </h2>
