@@ -102,14 +102,15 @@ export default function DoThiConLac({
         // Tính lý thuyết
         const theoreticalPeriod = 2 * Math.PI * Math.sqrt(pendulumLength / gravity)
         const theoreticalFrequency = 1 / theoreticalPeriod
-        const maxTheoreticalVelocity = Math.sqrt(2 * gravity * pendulumLength * (1 - Math.cos(Math.max(...angles.map(Math.abs)))))
+        const amplitude = Math.max(...angles.map(Math.abs))
+        const maxTheoreticalVelocity = Math.sqrt(2 * gravity * pendulumLength * (1 - Math.cos(amplitude)))
 
         return {
             maxAngle: Math.max(...angles),
             minAngle: Math.min(...angles),
             maxVelocity: Math.max(...velocities),
             minVelocity: Math.min(...velocities),
-            amplitude: (Math.max(...angles) - Math.min(...angles)) / 2,
+            amplitude: amplitude,
             actualPeriod: period || 0,
             theoreticalPeriod: theoreticalPeriod,
             theoreticalFrequency: theoreticalFrequency,
@@ -618,7 +619,6 @@ export default function DoThiConLac({
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                             {pendulumType === 'spring' ? (
-                                // Công thức con lắc lò xo
                                 <>
                                     <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
                                         <div className="font-mono text-blue-600 dark:text-blue-400 mb-1">T = 2π√(m/k)</div>
@@ -646,7 +646,6 @@ export default function DoThiConLac({
                                     </div>
                                 </>
                             ) : (
-                                // Công thức con lắc đơn (giữ nguyên code hiện tại)
                                 <>
                                     <div className="p-3 bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700">
                                         <div className="font-mono text-blue-600 dark:text-blue-400 mb-1">T = 2π√(L/g)</div>

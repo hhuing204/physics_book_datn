@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useEffect, useMemo } from 'react'
+import { useRef, useState, useEffect, useMemo, useCallback } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Html, Line } from '@react-three/drei'
 import * as THREE from 'three'
@@ -26,31 +26,34 @@ import {
 } from 'lucide-react'
 import DoThiConLac from './PendulumChart'
 
-// Component Line treo
-function DayTreoConLac({
-    start,
-    end,
-}: {
-    start: [number, number, number]
-    end: [number, number, number]
-}) {
-    const lineRef = useRef<THREE.Line>(null)
+// Component dây treo đã sửa lỗi TypeScript
+function DayTreoConLac({ start, end }: { start: [number, number, number], end: [number, number, number] }) {
+    const lineRef = useRef<THREE.Line | null>(null)
 
+    // Khởi tạo line khi component mount
     useEffect(() => {
         const geometry = new THREE.BufferGeometry().setFromPoints([
             new THREE.Vector3(...start),
             new THREE.Vector3(...end),
         ])
+        const material = new THREE.LineBasicMaterial({ color: '#666666', linewidth: 2 })
+        lineRef.current = new THREE.Line(geometry, material)
 
-        const material = new THREE.LineBasicMaterial({
-            color: '#666666',
-            linewidth: 3
-        })
-
-        const line = new THREE.Line(geometry, material)
-        // lineRef.current = line
+        return () => {
+            if (lineRef.current) {
+                lineRef.current.geometry.dispose()
+                if (lineRef.current.material) {
+                    if (Array.isArray(lineRef.current.material)) {
+                        lineRef.current.material.forEach(m => m.dispose())
+                    } else {
+                        lineRef.current.material.dispose()
+                    }
+                }
+            }
+        }
     }, [])
 
+    // Cập nhật vị trí khi start/end thay đổi
     useEffect(() => {
         if (!lineRef.current) return
 
@@ -58,7 +61,6 @@ function DayTreoConLac({
             start[0], start[1], start[2],
             end[0], end[1], end[2],
         ])
-
         lineRef.current.geometry.setAttribute(
             'position',
             new THREE.BufferAttribute(positions, 3)
@@ -67,7 +69,6 @@ function DayTreoConLac({
     }, [start, end])
 
     if (!lineRef.current) return null
-
     return <primitive object={lineRef.current} />
 }
 
@@ -84,7 +85,6 @@ function ConLac3D({
 }: any) {
     const groupRef = useRef<THREE.Group>(null)
     const quaNangRef = useRef<THREE.Mesh>(null)
-    const dayTreoRef = useRef<THREE.Line>(null)
 
     const gocHienTai = useRef(gocBanDau)
     const vanTocHienTai = useRef(0)
@@ -115,6 +115,11 @@ function ConLac3D({
 
     const [viTriQuaNang, setViTriQuaNang] = useState<[number, number, number]>(tinhViTriQuaNang(gocBanDau))
 
+    // Tạo dây treo đơn giản hơn bằng Line component của drei
+    const dayTreoDiem = useMemo(() => {
+        return [[0, 0, 0], viTriQuaNang] as [number, number, number][]
+    }, [viTriQuaNang])
+
     useFrame((state, delta) => {
         if (!groupRef.current || !quaNangRef.current || dangKeoRef.current || !daThaRaRef.current) return
 
@@ -136,19 +141,6 @@ function ConLac3D({
 
             if (quaNangRef.current) {
                 quaNangRef.current.position.set(...viTriMoi)
-            }
-
-            if (dayTreoRef.current) {
-                const dayTreoGeometry = dayTreoRef.current.geometry
-                const positions = new Float32Array([
-                    0, 0, 0,
-                    viTriMoi[0], viTriMoi[1], viTriMoi[2]
-                ])
-                dayTreoGeometry.setAttribute(
-                    'position',
-                    new THREE.BufferAttribute(positions, 3)
-                )
-                dayTreoGeometry.attributes.position.needsUpdate = true
             }
 
             capNhatGoc?.(gocHienTai.current)
@@ -179,19 +171,6 @@ function ConLac3D({
 
         if (quaNangRef.current) {
             quaNangRef.current.position.set(...viTriMoi)
-        }
-
-        if (dayTreoRef.current) {
-            const dayTreoGeometry = dayTreoRef.current.geometry
-            const positions = new Float32Array([
-                0, 0, 0,
-                viTriMoi[0], viTriMoi[1], viTriMoi[2]
-            ])
-            dayTreoGeometry.setAttribute(
-                'position',
-                new THREE.BufferAttribute(positions, 3)
-            )
-            dayTreoGeometry.attributes.position.needsUpdate = true
         }
     }
 
@@ -226,9 +205,9 @@ function ConLac3D({
                 />
             </mesh>
 
-            {/* Dây treo */}
+            {/* Dây treo - dùng Line component của drei để tránh lỗi dispose */}
             <Line
-                points={[[0, 0, 0], viTriQuaNang] as any}
+                points={dayTreoDiem}
                 color="#6B7280"
                 lineWidth={3}
             />
@@ -250,7 +229,6 @@ function ConLac3D({
                     emissive={dangKeoRef.current ? "#F59E0B" : "#000000"}
                     emissiveIntensity={0.2}
                 />
-
             </mesh>
 
             {/* Vị trí cân bằng */}
@@ -316,16 +294,8 @@ const NutGradient = ({
 
 // Card thông số
 const CardThongSo = ({ tieuDe, giaTri, donVi, icon: Icon, mau = 'blue' }: any) => {
-    const mauClasses = {
-        blue: 'bg-blue-50 border-blue-100 text-blue-700 dark:bg-blue-900/20 dark:border-blue-800/30 dark:text-blue-300',
-        green: 'bg-green-50 border-green-100 text-green-700 dark:bg-green-900/20 dark:border-green-800/30 dark:text-green-300',
-        purple: 'bg-purple-50 border-purple-100 text-purple-700 dark:bg-purple-900/20 dark:border-purple-800/30 dark:text-purple-300',
-        orange: 'bg-orange-50 border-orange-100 text-orange-700 dark:bg-orange-900/20 dark:border-orange-800/30 dark:text-orange-300',
-        red: 'bg-red-50 border-red-100 text-red-700 dark:bg-red-900/20 dark:border-red-800/30 dark:text-red-300',
-    }
-
     return (
-        <div className={`p-4 rounded-xl border transition-all duration-200 hover:shadow-md`}>
+        <div className={`p-4 rounded-xl border transition-all duration-200 hover:shadow-md bg-gradient-to-br from-${mau}-50 to-${mau}-100 dark:from-${mau}-900/30 dark:to-${mau}-800/30 border-${mau}-200 dark:border-${mau}-800`}>
             <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium opacity-80">{tieuDe}</span>
                 {Icon && <Icon className="w-4 h-4 opacity-70" />}
@@ -391,7 +361,7 @@ export default function MoPhongConLac3D() {
     const [viTriHienTai, setViTriHienTai] = useState<[number, number]>([0, 0])
     const [doGiamChan, setDoGiamChan] = useState(0.02)
     const [tocDoThoiGian, setTocDoThoiGian] = useState(0.5)
-    const [tabHienTai, setTabHienTai] = useState('dieuKhien') // 'dieuKhien', 'vatLy', 'nangLuong', 'doThi'
+    const [tabHienTai, setTabHienTai] = useState('dieuKhien')
 
     // Lịch sử dữ liệu cho đồ thị
     const [lichSuGoc, setLichSuGoc] = useState<number[]>([])
@@ -400,41 +370,75 @@ export default function MoPhongConLac3D() {
     const [lichSuThoiGian, setLichSuThoiGian] = useState<number[]>([])
     const [thoiGianDaTroi, setThoiGianDaTroi] = useState(0)
 
-    // Tính toán giá trị dẫn xuất
-    const x = chieuDaiConLac * Math.sin(gocHienTai)
-    const y = -chieuDaiConLac * Math.cos(gocHienTai)
-    const gocDoHienTai = (gocHienTai * 180 / Math.PI).toFixed(1)
+    // Sử dụng useRef để lưu giá trị mới nhất (tránh stale closure)
+    const gocHienTaiRef = useRef(gocHienTai)
+    const vanTocGocRef = useRef(vanTocGoc)
+    const thoiGianDaTroiRef = useRef(thoiGianDaTroi)
+    const chieuDaiConLacRef = useRef(chieuDaiConLac)
 
-    // Tính toán năng lượng
+    // Cập nhật ref khi state thay đổi
+    useEffect(() => {
+        gocHienTaiRef.current = gocHienTai
+    }, [gocHienTai])
+
+    useEffect(() => {
+        vanTocGocRef.current = vanTocGoc
+    }, [vanTocGoc])
+
+    useEffect(() => {
+        thoiGianDaTroiRef.current = thoiGianDaTroi
+    }, [thoiGianDaTroi])
+
+    useEffect(() => {
+        chieuDaiConLacRef.current = chieuDaiConLac
+    }, [chieuDaiConLac])
+
+    // Tính toán năng lượng hiện tại
     const dongNang = 0.5 * KHOI_LUONG_QUA_NANG * Math.pow(chieuDaiConLac * vanTocGoc, 2)
     const theNang = KHOI_LUONG_QUA_NANG * GIA_TOC_TRONG_TRUONG * chieuDaiConLac * (1 - Math.cos(gocHienTai))
     const tongNangLuong = dongNang + theNang
 
-    // Tính toán chu kỳ và tần số
-    const chuKyLyThuyet = 2 * Math.PI * Math.sqrt(chieuDaiConLac / GIA_TOC_TRONG_TRUONG)
-    const tanSoLyThuyet = 1 / chuKyLyThuyet
+    // Lưu năng lượng vào ref để dùng trong interval
+    const dongNangRef = useRef(dongNang)
+    const theNangRef = useRef(theNang)
+    const tongNangLuongRef = useRef(tongNangLuong)
 
-    // Cập nhật lịch sử dữ liệu
     useEffect(() => {
-        if (dangChay) {
-            const timer = setInterval(() => {
-                setThoiGianDaTroi(t => t + 0.1)
+        dongNangRef.current = dongNang
+        theNangRef.current = theNang
+        tongNangLuongRef.current = tongNangLuong
+    }, [dongNang, theNang, tongNangLuong])
 
-                setLichSuGoc(h => [...h.slice(-200), gocHienTai])
-                setLichSuVanToc(h => [...h.slice(-200), vanTocGoc])
-                setLichSuNangLuong(h => [...h.slice(-200), {
-                    dongNang,
-                    theNang,
-                    tongNangLuong
-                }])
-                setLichSuThoiGian(h => [...h.slice(-200), thoiGianDaTroi])
-            }, 100)
+    // Cập nhật lịch sử dữ liệu - ĐÃ SỬA LỖI
+    useEffect(() => {
+        if (!dangChay) return
 
-            return () => clearInterval(timer)
-        }
-    }, [dangChay, gocHienTai, vanTocGoc, thoiGianDaTroi, dongNang, theNang, tongNangLuong])
+        const interval = setInterval(() => {
+            // Lấy giá trị mới nhất từ ref
+            const currentGoc = gocHienTaiRef.current
+            const currentVanToc = vanTocGocRef.current
+            const currentThoiGian = thoiGianDaTroiRef.current
+            const currentDongNang = dongNangRef.current
+            const currentTheNang = theNangRef.current
+            const currentTongNangLuong = tongNangLuongRef.current
 
-    const xuLyReset = () => {
+            setThoiGianDaTroi(prev => prev + 0.1)
+
+            setLichSuGoc(prev => [...prev.slice(-300), currentGoc])
+            setLichSuVanToc(prev => [...prev.slice(-300), currentVanToc])
+            setLichSuNangLuong(prev => [...prev.slice(-300), {
+                dongNang: currentDongNang,
+                theNang: currentTheNang,
+                tongNangLuong: currentTongNangLuong
+            }])
+            setLichSuThoiGian(prev => [...prev.slice(-300), currentThoiGian + 0.1])
+        }, 100)
+
+        return () => clearInterval(interval)
+    }, [dangChay]) // Chỉ phụ thuộc vào dangChay
+
+    // Reset khi thay đổi chiều dài hoặc các thông số khác
+    const xuLyReset = useCallback(() => {
         setDangChay(false)
         setGocHienTai(Math.PI / 4)
         setVanTocGoc(0)
@@ -443,7 +447,16 @@ export default function MoPhongConLac3D() {
         setLichSuNangLuong([])
         setLichSuThoiGian([])
         setThoiGianDaTroi(0)
-    }
+
+        // Cập nhật ref
+        gocHienTaiRef.current = Math.PI / 4
+        vanTocGocRef.current = 0
+        thoiGianDaTroiRef.current = 0
+    }, [])
+
+    // Tính toán chu kỳ và tần số
+    const chuKyLyThuyet = 2 * Math.PI * Math.sqrt(chieuDaiConLac / GIA_TOC_TRONG_TRUONG)
+    const tanSoLyThuyet = 1 / chuKyLyThuyet
 
     return (
         <div className={`bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 rounded-2xl shadow-2xl p-6 transition-all duration-300 ${toanManHinh ? 'fixed inset-4 z-50 overflow-y-auto' : ''}`}>
@@ -570,11 +583,11 @@ export default function MoPhongConLac3D() {
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                     <span>Góc lệch:</span>
-                                    <span className="font-bold">{gocDoHienTai}°</span>
+                                    <span className="font-bold">{(gocHienTai * 180 / Math.PI).toFixed(1)}°</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Vị trí (x, y):</span>
-                                    <span className="font-bold">({x.toFixed(2)}, {y.toFixed(2)})</span>
+                                    <span className="font-bold">({(chieuDaiConLac * Math.sin(gocHienTai)).toFixed(2)}, {(-chieuDaiConLac * Math.cos(gocHienTai)).toFixed(2)})</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Vận tốc:</span>
@@ -625,7 +638,10 @@ export default function MoPhongConLac3D() {
                                     min={0.5}
                                     max={4}
                                     step={0.1}
-                                    onChange={setChieuDaiConLac}
+                                    onChange={(v: number) => {
+                                        setChieuDaiConLac(v)
+                                        xuLyReset()
+                                    }}
                                     donVi=" m"
                                     ghiChu="Chiều dài càng lớn, chu kỳ dao động càng dài"
                                 />
@@ -760,13 +776,13 @@ export default function MoPhongConLac3D() {
                                         <div className="flex justify-between text-sm mb-1">
                                             <span>Phần trăm Động năng:</span>
                                             <span className="font-bold text-yellow-600">
-                                                {(dongNang / tongNangLuong * 100).toFixed(1)}%
+                                                {tongNangLuong > 0 ? (dongNang / tongNangLuong * 100).toFixed(1) : 0}%
                                             </span>
                                         </div>
                                         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-gradient-to-r from-yellow-400 to-yellow-500 transition-all duration-300"
-                                                style={{ width: `${(dongNang / tongNangLuong) * 100}%` }}
+                                                style={{ width: `${tongNangLuong > 0 ? (dongNang / tongNangLuong) * 100 : 0}%` }}
                                             />
                                         </div>
                                     </div>
@@ -774,13 +790,13 @@ export default function MoPhongConLac3D() {
                                         <div className="flex justify-between text-sm mb-1">
                                             <span>Phần trăm Thế năng:</span>
                                             <span className="font-bold text-green-600">
-                                                {(theNang / tongNangLuong * 100).toFixed(1)}%
+                                                {tongNangLuong > 0 ? (theNang / tongNangLuong * 100).toFixed(1) : 0}%
                                             </span>
                                         </div>
                                         <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-gradient-to-r from-green-400 to-green-500 transition-all duration-300"
-                                                style={{ width: `${(theNang / tongNangLuong) * 100}%` }}
+                                                style={{ width: `${tongNangLuong > 0 ? (theNang / tongNangLuong) * 100 : 0}%` }}
                                             />
                                         </div>
                                     </div>
@@ -830,7 +846,7 @@ export default function MoPhongConLac3D() {
                         <div className="space-y-4">
                             <div>
                                 <div className="text-sm text-gray-600 dark:text-gray-400">Góc Lệch Hiện Tại</div>
-                                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{gocDoHienTai}°</div>
+                                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">{(gocHienTai * 180 / Math.PI).toFixed(1)}°</div>
                                 <div className="text-xs text-blue-500 dark:text-blue-400 mt-1">
                                     {gocHienTai.toFixed(3)} radian
                                 </div>
@@ -838,8 +854,8 @@ export default function MoPhongConLac3D() {
                             <div>
                                 <div className="text-sm text-gray-600 dark:text-gray-400">Tọa Độ Quả Nặng</div>
                                 <div className="text-xl font-bold text-gray-800 dark:text-white">
-                                    x = {x.toFixed(2)} m<br />
-                                    y = {y.toFixed(2)} m
+                                    x = {(chieuDaiConLac * Math.sin(gocHienTai)).toFixed(2)} m<br />
+                                    y = {(-chieuDaiConLac * Math.cos(gocHienTai)).toFixed(2)} m
                                 </div>
                             </div>
                             <div>
@@ -923,7 +939,7 @@ export default function MoPhongConLac3D() {
                                 <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-yellow-500 rounded-full transition-all duration-300"
-                                        style={{ width: `${(dongNang / tongNangLuong) * 100}%` }}
+                                        style={{ width: `${tongNangLuong > 0 ? (dongNang / tongNangLuong) * 100 : 0}%` }}
                                     />
                                 </div>
                             </div>
@@ -935,7 +951,7 @@ export default function MoPhongConLac3D() {
                                 <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                     <div
                                         className="h-full bg-green-500 rounded-full transition-all duration-300"
-                                        style={{ width: `${(theNang / tongNangLuong) * 100}%` }}
+                                        style={{ width: `${tongNangLuong > 0 ? (theNang / tongNangLuong) * 100 : 0}%` }}
                                     />
                                 </div>
                             </div>
@@ -945,7 +961,7 @@ export default function MoPhongConLac3D() {
                                     <span className="font-bold text-lg text-purple-600">{tongNangLuong.toFixed(2)} J</span>
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                    {doGiamChan > 0 ? "⚠️ Năng lượng đang giảm do ma sát" : "✅ Năng lượng được bảo toàn"}
+                                    {doGiamChan > 0 ? " Năng lượng đang giảm do ma sát" : " Năng lượng được bảo toàn"}
                                 </div>
                             </div>
                         </div>
@@ -956,7 +972,7 @@ export default function MoPhongConLac3D() {
             {/* Footer */}
             <div className="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700">
                 <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                    <p>🎯 <strong>Mô phỏng vật lý con lắc đơn</strong> - Phát triển dành cho học sinh Việt Nam</p>
+                    <p> <strong>Mô phỏng vật lý con lắc đơn</strong> - Phát triển dành cho học sinh Việt Nam</p>
                     <p className="mt-1">Ứng dụng cho bài học: Dao động điều hòa, Con lắc đơn, Bảo toàn năng lượng</p>
                 </div>
             </div>
