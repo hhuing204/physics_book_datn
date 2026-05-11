@@ -19,7 +19,8 @@ export async function ollamaMiddleware(request: NextRequest) {
     }
 
     // Kiểm tra model mặc định có tồn tại không
-    const availableModels = await getAvailableModels();
+    const availableModels = (await getAvailableModels())
+        .map(model => model.name);
     const defaultModel = ollamaConfig.defaultModel;
 
     if (!availableModels.includes(defaultModel)) {
