@@ -557,7 +557,7 @@ export default function Home() {
       </section>
 
       {/* ==================== SECTION 3: AI ASSISTANT ==================== */}
-      <section className="snap-section relative min-h-screen w-full flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 overflow-hidden">
+      {/* <section className="snap-section relative min-h-screen w-full flex items-center justify-center bg-gradient-to-r from-indigo-600 to-purple-600 overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full">
           <div className="absolute top-20 left-10 w-72 h-72 bg-white/10 rounded-full blur-3xl animate-pulse" />
           <div className="absolute bottom-20 right-10 w-96 h-96 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000" />
@@ -610,7 +610,7 @@ export default function Home() {
             </div>
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* ==================== SECTION 4: FOOTER ==================== */}
       <section className="snap-section relative min-h-screen w-full bg-gray-900 flex items-center justify-center">

@@ -45,7 +45,7 @@ export default function RootLayout({
               {children}
             </ClientLayout>
             {/* AI Sidebar - Chèn ở đây */}
-            <AISidebarSimple />
+            {/* <AISidebarSimple /> */}
           </MathProvider>
         </AuthProvider>
       </body>

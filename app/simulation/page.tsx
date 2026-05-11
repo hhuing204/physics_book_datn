@@ -185,10 +185,10 @@ const SimulationCard = ({ chapter, onClick }: { chapter: Chapter; onClick: () =>
                             <Icons.BookOpen className="w-3 h-3" />
                             <span>Chương {chapter.chapterId}</span>
                         </div>
-                        <div className="flex items-center space-x-1 text-xs text-purple-600 dark:text-purple-400">
+                        {/* <div className="flex items-center space-x-1 text-xs text-purple-600 dark:text-purple-400">
                             <Icons.Sparkles className="w-3 h-3" />
                             <span>3D Interactive</span>
-                        </div>
+                        </div> */}
                     </div>
 
                     {/* Button */}
@@ -296,10 +296,10 @@ export default function SimulationPage() {
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 {/* Hero Section */}
                 <div className="text-center mb-12">
-                    <div className="inline-flex items-center px-4 py-2 bg-purple-100 dark:bg-purple-900/30 rounded-full text-purple-800 dark:text-purple-200 text-sm font-medium mb-6">
+                    {/* <div className="inline-flex items-center px-4 py-2 bg-purple-100 dark:bg-purple-900/30 rounded-full text-purple-800 dark:text-purple-200 text-sm font-medium mb-6">
                         <Icons.Sparkles className="w-4 h-4 mr-2 text-yellow-500" />
                         <span>Mô phỏng 3D tương tác</span>
-                    </div>
+                    </div> */}
 
                     <h1 className="text-5xl md:text-6xl font-bold mb-6">
                         <span className="bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">

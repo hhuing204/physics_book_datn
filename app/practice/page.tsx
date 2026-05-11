@@ -469,7 +469,7 @@ export default function PracticePage() {
             </div>
 
             <div className="space-y-4">
-              <button
+              {/* <button
                 onClick={analyzeWithAI}
                 disabled={isAnalyzing}
                 className={`w-full px-6 py-3 rounded-lg font-medium transition-colors flex items-center justify-center space-x-2 ${isAnalyzing
@@ -488,7 +488,7 @@ export default function PracticePage() {
                     <span>Phân tích AI chi tiết</span>
                   </>
                 )}
-              </button>
+              </button> */}
 
               <button
                 onClick={handleRestart}
