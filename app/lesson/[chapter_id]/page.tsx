@@ -234,7 +234,7 @@ export default function ChapterLessonsPage() {
                 {chapter.lessons && chapter.lessons.length > 0 && (
                     <div className="mt-8 text-center">
                         <Link
-                            href={`/practice`}
+                            href={`/practice?chapterId=${chapter.chapterId}`}
                             className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                         >
                             <BookOpen className="w-5 h-5 mr-2" />

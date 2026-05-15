@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams, useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { MathFormula } from '@/components/Math'
+import { MathFormula, RenderWithMath } from '@/components/Math'
 import * as Icons from 'lucide-react'
 
 interface Exercise {
@@ -29,101 +29,99 @@ interface LessonExerciseCount {
 }
 
 // Component để render nội dung có công thức toán
-function RenderWithMath({ content }: { content: string }) {
-  if (!content) return null
+// function RenderWithMath({ content }: { content: string }) {
+//   if (!content) return null
 
-  const parseContent = (text: string) => {
-    const parts: Array<{ type: 'text' | 'math'; content: string; inline?: boolean }> = []
-    const blockMathRegex = /\$\$([^$]+?)\$\$/g
-    const inlineMathRegex = /\$([^$]+?)\$/g
+//   const parseContent = (text: string) => {
+//     const parts: Array<{ type: 'text' | 'math'; content: string; inline?: boolean }> = []
+//     const blockMathRegex = /\$\$([^$]+?)\$\$/g
+//     const inlineMathRegex = /\$([^$]+?)\$/g
 
-    let lastIndex = 0
-    let match
+//     let lastIndex = 0
+//     let match
 
-    const blockMatches: Array<{ index: number; content: string; length: number }> = []
-    while ((match = blockMathRegex.exec(text)) !== null) {
-      blockMatches.push({ index: match.index, content: match[1], length: match[0].length })
-    }
+//     const blockMatches: Array<{ index: number; content: string; length: number }> = []
+//     while ((match = blockMathRegex.exec(text)) !== null) {
+//       blockMatches.push({ index: match.index, content: match[1], length: match[0].length })
+//     }
 
-    const inlineMatches: Array<{ index: number; content: string; length: number }> = []
-    while ((match = inlineMathRegex.exec(text)) !== null) {
-      const isBlock = blockMatches.some(b => match!.index >= b.index && match!.index < b.index + b.length)
-      if (!isBlock) {
-        inlineMatches.push({ index: match.index, content: match[1], length: match[0].length })
-      }
-    }
+//     const inlineMatches: Array<{ index: number; content: string; length: number }> = []
+//     while ((match = inlineMathRegex.exec(text)) !== null) {
+//       const isBlock = blockMatches.some(b => match!.index >= b.index && match!.index < b.index + b.length)
+//       if (!isBlock) {
+//         inlineMatches.push({ index: match.index, content: match[1], length: match[0].length })
+//       }
+//     }
 
-    const allMatches = [
-      ...blockMatches.map(m => ({ ...m, type: 'block' as const })),
-      ...inlineMatches.map(m => ({ ...m, type: 'inline' as const }))
-    ].sort((a, b) => a.index - b.index)
+//     const allMatches = [
+//       ...blockMatches.map(m => ({ ...m, type: 'block' as const })),
+//       ...inlineMatches.map(m => ({ ...m, type: 'inline' as const }))
+//     ].sort((a, b) => a.index - b.index)
 
-    for (const match of allMatches) {
-      if (match.index > lastIndex) {
-        parts.push({
-          type: 'text',
-          content: text.slice(lastIndex, match.index)
-        })
-      }
-      parts.push({
-        type: 'math',
-        content: match.content,
-        inline: match.type === 'inline'
-      })
-      lastIndex = match.index + match.length
-    }
+//     for (const match of allMatches) {
+//       if (match.index > lastIndex) {
+//         parts.push({
+//           type: 'text',
+//           content: text.slice(lastIndex, match.index)
+//         })
+//       }
+//       parts.push({
+//         type: 'math',
+//         content: match.content,
+//         inline: match.type === 'inline'
+//       })
+//       lastIndex = match.index + match.length
+//     }
 
-    if (lastIndex < text.length) {
-      parts.push({
-        type: 'text',
-        content: text.slice(lastIndex)
-      })
-    }
+//     if (lastIndex < text.length) {
+//       parts.push({
+//         type: 'text',
+//         content: text.slice(lastIndex)
+//       })
+//     }
 
-    return parts
-  }
+//     return parts
+//   }
 
-  const parts = parseContent(content)
+//   const parts = parseContent(content)
 
-  return (
-    <div className="math-content">
-      {parts.map((part, idx) => {
-        if (part.type === 'math') {
-          return (
-            <MathFormula
-              key={idx}
-              formula={part.content}
-              inline={part.inline}
-            />
-          )
-        }
-        let text = part.content
-        const greekMap: Record<string, string> = {
-          'α': '\\alpha', 'β': 'beta', 'γ': 'gamma', 'δ': 'delta',
-          'ε': 'epsilon', 'ζ': 'zeta', 'η': 'eta', 'θ': 'theta',
-          'ι': 'iota', 'κ': 'kappa', 'λ': 'lambda', 'μ': 'mu',
-          'ν': 'nu', 'ξ': 'xi', 'π': 'pi', 'ρ': 'rho',
-          'σ': 'sigma', 'τ': 'tau', 'υ': 'upsilon', 'φ': 'varphi',
-          'χ': 'chi', 'ψ': 'psi', 'ω': 'omega',
-          'Δ': 'Delta', 'Σ': 'Sigma', 'Φ': 'Phi', 'Ψ': 'Psi', 'Ω': 'Omega'
-        }
+//   return (
+//     <div className="math-content">
+//       {parts.map((part, idx) => {
+//         if (part.type === 'math') {
+//           return (
+//             <MathFormula
+//               key={idx}
+//               formula={part.content}
+//               inline={part.inline}
+//             />
+//           )
+//         }
+//         let text = part.content
+//         const greekMap: Record<string, string> = {
+//           'α': '\\alpha', 'β': 'beta', 'γ': 'gamma', 'δ': 'delta',
+//           'ε': 'epsilon', 'ζ': 'zeta', 'η': 'eta', 'θ': 'theta',
+//           'ι': 'iota', 'κ': 'kappa', 'λ': 'lambda', 'μ': 'mu',
+//           'ν': 'nu', 'ξ': 'xi', 'π': 'pi', 'ρ': 'rho',
+//           'σ': 'sigma', 'τ': 'tau', 'υ': 'upsilon', 'φ': 'varphi',
+//           'χ': 'chi', 'ψ': 'psi', 'ω': 'omega',
+//           'Δ': 'Delta', 'Σ': 'Sigma', 'Φ': 'Phi', 'Ψ': 'Psi', 'Ω': 'Omega'
+//         }
 
-        Object.entries(greekMap).forEach(([char, latex]) => {
-          text = text.replace(new RegExp(char, 'g'), `$${latex}$`)
-        })
+//         Object.entries(greekMap).forEach(([char, latex]) => {
+//           text = text.replace(new RegExp(char, 'g'), `$${latex}$`)
+//         })
 
-        return <span key={idx} dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br/>') }} />
-      })}
-    </div>
-  )
-}
+//         return <span key={idx} dangerouslySetInnerHTML={{ __html: text.replace(/\n/g, '<br/>') }} />
+//       })}
+//     </div>
+//   )
+// }
 
 // Danh sách chương với icon Lucide
 const chapters = [
   { id: '1', title: 'Dao Động Cơ', icon: Icons.Waves, color: 'from-blue-500 to-cyan-500', bgGlow: 'shadow-blue-500/20' },
   { id: '2', title: 'Sóng Cơ', icon: Icons.Zap, color: 'from-cyan-500 to-teal-500', bgGlow: 'shadow-cyan-500/20' },
-  { id: '3', title: 'Điện Trường', icon: Icons.Bolt, color: 'from-yellow-500 to-orange-500', bgGlow: 'shadow-yellow-500/20' },
-  { id: '4', title: 'Dòng Điện Không Đổi', icon: Icons.CircuitBoard, color: 'from-green-500 to-emerald-500', bgGlow: 'shadow-green-500/20' },
 ]
 
 // Map lessonId -> lessonTitle
@@ -141,19 +139,6 @@ const lessonsByChapter: Record<string, { id: string; title: string }[]> = {
     { id: '8', title: 'Giao Thoa Sóng' },
     { id: '9', title: 'Sóng Dừng' }
   ],
-  '3': [
-    { id: '11', title: 'Định luật Coulomb về tương tác tĩnh điện' },
-    { id: '12', title: 'Điện trường' },
-    { id: '13', title: 'Điện thế và thế năng điện' },
-    { id: '14', title: 'Tụ điện' },
-    { id: '15', title: 'Năng lượng và ứng dụng của tụ điện' }
-  ],
-  '4': [
-    { id: '16', title: 'Dòng điện. Cường độ dòng điện' },
-    { id: '17', title: 'Điện trở. Định luật Ohm' },
-    { id: '18', title: 'Nguồn điện' },
-    { id: '19', title: 'Năng lượng điện. Công suất điện' }
-  ]
 }
 
 export default function ExercisesPage() {
@@ -262,7 +247,7 @@ export default function ExercisesPage() {
   }
 
   const handlePracticeOverall = () => {
-    router.push('/practice')
+    router.push('/practice?chapterId=all')
   }
 
   const handleChapterSelect = (chapterId: string) => {

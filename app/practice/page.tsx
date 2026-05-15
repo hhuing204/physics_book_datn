@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation' // Thêm useSearchParams
+import { MathProvider, MathFormula, RenderWithMath } from '@/components/Math'
 
 interface Exercise {
   id: number
@@ -41,6 +42,9 @@ interface ExerciseResult {
 
 export default function PracticePage() {
 
+  const searchParams = useSearchParams() // Lấy params từ URL
+  const chapterId = searchParams.get('chapterId') // Lấy chapterId từ URL
+
   //State for AI
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
@@ -60,6 +64,7 @@ export default function PracticePage() {
   const [showFinalResult, setShowFinalResult] = useState(false)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
+  // const [selectedChapter, setSelectedChapter] = useState<string>('all');
   const router = useRouter()
 
   // Fetch exercises từ database
@@ -67,19 +72,32 @@ export default function PracticePage() {
     const fetchExercises = async () => {
       try {
         setLoading(true)
-        const response = await fetch('/api/exercises')
+        // Xây dựng URL với chapterId
+        let url = '/api/exercises'
+        if (chapterId && chapterId !== 'all') {
+          url += `?chapterId=${chapterId}`
+        }
+
+        const response = await fetch(url)
         const data = await response.json()
 
         if (data.success && data.exercises) {
-          // Lấy ngẫu nhiên 3 câu cho mỗi bài (4 bài, tổng 12 câu)
+          // Nhóm bài tập theo lessonId
+          const exercisesByLesson: { [key: string]: Exercise[] } = {}
+
+          data.exercises.forEach((ex: Exercise) => {
+            if (!exercisesByLesson[ex.lessonId]) {
+              exercisesByLesson[ex.lessonId] = []
+            }
+            exercisesByLesson[ex.lessonId].push(ex)
+          })
+
           const selectedExercises: Exercise[] = []
+          const lessonIds = Object.keys(exercisesByLesson)
 
-          for (let lessonId = 1; lessonId <= 4; lessonId++) {
-            const lessonExercises = data.exercises.filter(
-              (ex: Exercise) => ex.lessonId === lessonId.toString()
-            )
-
-            // Shuffle và lấy 3 câu ngẫu nhiên
+          for (const lessonId of lessonIds) {
+            const lessonExercises = exercisesByLesson[lessonId]
+            // Lấy ngẫu nhiên 3 câu cho mỗi bài học
             const shuffled = [...lessonExercises].sort(() => Math.random() - 0.5)
             const selected = shuffled.slice(0, 3)
             selectedExercises.push(...selected)
@@ -98,7 +116,8 @@ export default function PracticePage() {
     }
 
     fetchExercises()
-  }, [])
+  }, [chapterId]) // Thêm selectedChapter vào dependency
+
 
   useEffect(() => {
     setMounted(true)
@@ -656,7 +675,13 @@ export default function PracticePage() {
             {/* Question */}
             <div className="mb-6">
               <p className="text-lg text-gray-800 dark:text-white leading-relaxed">
-                {exercise.question}
+                {chapterId === '1' ? (
+                  <MathProvider children={exercise.question} />
+                  // ) : chapterId === '2' ? (
+                  //   <RenderWithMath content={exercise.question} />
+                ) : (
+                  <RenderWithMath content={exercise.question} />
+                )}
               </p>
             </div>
 
@@ -687,7 +712,13 @@ export default function PracticePage() {
                         <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm font-medium mr-3">
                           {String.fromCharCode(65 + index)}
                         </span>
-                        {option}
+                        {chapterId === '1' ? (
+                          <MathProvider children={option} />
+                        ) : chapterId === '2' ? (
+                          <RenderWithMath content={option} />
+                        ) : (
+                          <RenderWithMath content={option} />
+                        )}
                       </div>
                     </button>
                   ))}
@@ -760,7 +791,13 @@ export default function PracticePage() {
                       {isCorrect ? 'Chính xác!' : 'Chưa chính xác'}
                     </span>
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300">{exercise.explanation}</p>
+                  <p className="text-gray-700 dark:text-gray-300">{chapterId === '1' ? (
+                    <MathProvider children={exercise.explanation} />
+                  ) : chapterId === '2' ? (
+                    <RenderWithMath content={exercise.explanation} />
+                  ) : (
+                    <RenderWithMath content={exercise.explanation} />
+                  )}</p>
                 </div>
               )}
             </div>
