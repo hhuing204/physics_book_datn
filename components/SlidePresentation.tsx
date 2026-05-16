@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react'
 import { MathFormula } from './Math'
 import { useProgress } from '@/hooks/useProgress'
-import OscillationSimulation from './OscillationSimulation'
-import CircularMotionGraph from './simulator/CircularMotionGraph'
-import EnergySimulation from './simulator/EnergySimulation'
-import PendulumSimulation from './simulator/Chapter1/PendulumSimulation/PendulumSimulation'
-import ResonanceSimulation from './simulator/ResonanceSimulation'
+// import OscillationSimulation from './OscillationSimulation'
+// import CircularMotionGraph from './simulator/CircularMotionGraph'
+// import EnergySimulation from './simulator/EnergySimulation'
+// import PendulumSimulation from './simulator/Chapter1/PendulumSimulation/PendulumSimulation'
+// import ResonanceSimulation from './simulator/ResonanceSimulation'
 import SimulationModal from './SimulationModal'
 
 interface Slide {
@@ -23,10 +23,12 @@ interface Slide {
 
 interface SlidePresentationProps {
   slides: Slide[]
+  chapterId: string
   lessonTitle: string
   lessonId: number
   onSlideChange?: (slideIndex: number) => void
   onLessonComplete?: () => void
+  onOpenSimulation?: (simulationType: string) => void
 }
 
 export interface SlidePresentationRef {
@@ -36,10 +38,12 @@ export interface SlidePresentationRef {
 
 const SlidePresentation = forwardRef<SlidePresentationRef, SlidePresentationProps>(({
   slides,
+  chapterId,
   lessonTitle,
   lessonId,
   onSlideChange,
-  onLessonComplete
+  onLessonComplete,
+  onOpenSimulation
 }, ref) => {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -48,6 +52,14 @@ const SlidePresentation = forwardRef<SlidePresentationRef, SlidePresentationProp
   const contentRef = useRef<HTMLDivElement>(null)
   const [activeSimulation, setActiveSimulation] = useState<string | null>(null)
   const { updateProgress } = useProgress()
+  const [showSimulationModal, setShowSimulationModal] = useState(false)
+  const [simulationType, setSimulationType] = useState<string>('')
+
+  const handleOpenSimulation = (simulationType: string) => {
+    if (onOpenSimulation) {
+      onOpenSimulation(simulationType)
+    }
+  }
 
   // MathJax typesetting helper
   const ensureMathJaxTypeset = (selector = '.slide-content', attempt = 0): Promise<void> => {
@@ -155,50 +167,7 @@ const SlidePresentation = forwardRef<SlidePresentationRef, SlidePresentationProp
     }
   }
 
-  // Simulation component renderer - SỬA LẠI PHẦN NÀY
-  const renderSimulationComponent = (componentName: string) => {
-    switch (componentName) {
-      case 'PendulumSimulation':
-        return (
-          <div className="w-full h-full">
-            <PendulumSimulation />
-          </div>
-        )
-      case 'CircularMotionGraph':
-        return (
-          <div className="w-full h-full">
-            <CircularMotionGraph />
-          </div>
-        )
-      case 'EnergySimulation':
-        return (
-          <div className="w-full h-full">
-            <EnergySimulation />
-          </div>
-        )
-      case 'ResonanceSimulation':
-        return (
-          <div className="w-full h-full">
-            <ResonanceSimulation />
-          </div>
-        )
-      case 'OscillationSimulation':
-        return (
-          <div className="w-full h-full">
-            <OscillationSimulation type="simple" />
-          </div>
-        )
-      default:
-        return (
-          <div className="flex items-center justify-center h-64">
-            <div className="text-center">
-              <div className="text-gray-500 text-lg mb-2">Mô phỏng không khả dụng</div>
-              <div className="text-sm text-gray-400">Loại: {componentName}</div>
-            </div>
-          </div>
-        )
-    }
-  }
+
 
   const openSimulation = (simulationType: string) => {
     setActiveSimulation(simulationType)
@@ -255,24 +224,6 @@ const SlidePresentation = forwardRef<SlidePresentationRef, SlidePresentationProp
     }
   }
 
-  const getSimulationTypeFromSlide = (): string => {
-    const slideTitle = slide.title.toLowerCase()
-    const slideContent = slide.content.toLowerCase()
-
-    if (slideTitle.includes('con lắc') || slideTitle.includes('pendulum') || slideContent.includes('con lắc')) {
-      return 'PendulumSimulation'
-    } else if (slideTitle.includes('vòng tròn') || slideTitle.includes('lượng giác') || slideTitle.includes('circular') || slideContent.includes('vòng tròn')) {
-      return 'CircularMotionGraph'
-    } else if (slideTitle.includes('năng lượng') || slideTitle.includes('energy') || slideContent.includes('năng lượng')) {
-      return 'EnergySimulation'
-    } else if (slideTitle.includes('cộng hưởng') || slideTitle.includes('resonance') || slideContent.includes('cộng hưởng')) {
-      return 'ResonanceSimulation'
-    } else if (slideTitle.includes('dao động') || slideTitle.includes('oscillation') || slideContent.includes('dao động')) {
-      return 'OscillationSimulation'
-    }
-
-    return slide.simulationType || 'OscillationSimulation'
-  }
 
   return (
     <div className="w-full h-full bg-gray-50 dark:bg-gray-900 relative overflow-hidden">
@@ -343,7 +294,7 @@ const SlidePresentation = forwardRef<SlidePresentationRef, SlidePresentationProp
             {slide.type === 'simulation' && (
               <div className="mt-8 text-center">
                 <button
-                  onClick={() => openSimulation(getSimulationTypeFromSlide())}
+                  onClick={() => handleOpenSimulation(slide.simulationType || '')}
                   className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl inline-flex items-center space-x-3"
                 >
                   <span className="text-2xl">🎮</span>
@@ -391,32 +342,12 @@ const SlidePresentation = forwardRef<SlidePresentationRef, SlidePresentationProp
 
       {/* Simulation Modal */}
       <SimulationModal
-        isOpen={!!activeSimulation}
-        onClose={closeSimulation}
-        title={slide.title || 'Mô phỏng vật lý'}
-      >
-        {activeSimulation && (
-          <div className="h-full flex flex-col">
-            <div className="flex-1 min-h-0">
-              {renderSimulationComponent(activeSimulation)}
-            </div>
-
-            {/* Interactive Guide */}
-            <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <h4 className="font-semibold mb-3 text-gray-900 dark:text-white flex items-center">
-                <span className="mr-2">📝</span>
-                Khám phá và quan sát
-              </h4>
-              <ul className="list-disc list-inside space-y-2 text-sm text-gray-700 dark:text-gray-300">
-                <li>Thay đổi các thông số và quan sát sự thay đổi</li>
-                <li>Ghi lại các hiện tượng đặc biệt bạn quan sát được</li>
-                <li>Thử dự đoán kết quả trước khi thay đổi thông số</li>
-                <li>So sánh kết quả mô phỏng với lý thuyết đã học</li>
-              </ul>
-            </div>
-          </div>
-        )}
-      </SimulationModal>
+        isOpen={showSimulationModal}
+        onClose={() => setShowSimulationModal(false)}
+        componentName={simulationType}
+        chapterId={chapterId}
+        lessonId={String(lessonId)}
+      />
 
       {/* Navigation Hints */}
       <div className="fixed bottom-4 left-4 text-xs text-gray-500 dark:text-gray-400 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-600">

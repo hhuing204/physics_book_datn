@@ -6,9 +6,10 @@ import { MathFormula } from '@/components/Math'
 import SlidePresentation, { SlidePresentationRef } from '@/components/SlidePresentation'
 import { useProgress } from '@/hooks/useProgress'
 import Toast from '@/components/Toast'
-import SimulationModal from '@/components/SimulationModal'
 import axios from 'axios'
+import SimulationModal from '@/components/SimulationModal'
 import { Chapter, Lesson, Slide } from '@/types/Chapter'
+
 
 export default function LessonPage() {
   const [mounted, setMounted] = useState(false)
@@ -31,6 +32,11 @@ export default function LessonPage() {
 
   const { updateProgress } = useProgress()
   const [isUpdating, setIsUpdating] = useState(false)
+
+  const handleOpenSimulation = (type: string) => {
+    setSimulationType(type)
+    setShowSimulationModal(true)
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -301,6 +307,8 @@ export default function LessonPage() {
               lessonId={parseInt(lessonId)}
               onSlideChange={handleSlideChange}
               onLessonComplete={handleLessonComplete}
+              onOpenSimulation={handleOpenSimulation}
+              chapterId={chapterId}
             />
           </div>
 
@@ -362,15 +370,15 @@ export default function LessonPage() {
       />
 
       {/* Simulation Modal */}
-      {/* {showSimulationModal && (
+      {showSimulationModal && (
         <SimulationModal
           isOpen={showSimulationModal}
           onClose={() => setShowSimulationModal(false)}
-          simulationType={simulationType}
+          componentName={simulationType}
           chapterId={chapterId}
           lessonId={lessonId}
         />
-      )} */}
+      )}
     </div>
   )
 }
