@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams, useParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { MathFormula, RenderWithMath } from '@/components/Math'
+import { MathFormula, RenderWithMath, MathProvider } from '@/components/Math'
 import * as Icons from 'lucide-react'
 
 interface Exercise {
@@ -791,7 +791,13 @@ export default function ExercisesPage() {
               {/* Question */}
               <div className="mb-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
                 <h3 className="text-lg md:text-xl font-semibold text-gray-900 dark:text-white leading-relaxed">
-                  <RenderWithMath content={exercise.question} />
+                  {exercise.chapterId === '1' ? (
+                    <MathProvider children={exercise.question} />
+                  ) : exercise.chapterId === '2' ? (
+                    <RenderWithMath content={exercise.question} />
+                  ) : (
+                    <RenderWithMath content={exercise.question} />
+                  )}
                 </h3>
               </div>
 
@@ -838,7 +844,13 @@ export default function ExercisesPage() {
                             {letters[index]}
                           </div>
                           <span className="flex-1 text-gray-800 dark:text-gray-200">
-                            <RenderWithMath content={option} />
+                            {exercise.chapterId === '1' ? (
+                              <MathProvider children={option} />
+                            ) : exercise.chapterId === '2' ? (
+                              <RenderWithMath content={option} />
+                            ) : (
+                              <RenderWithMath content={option} />
+                            )}
                           </span>
                           {showResult && isCorrect && (
                             <Icons.CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
@@ -887,7 +899,13 @@ export default function ExercisesPage() {
                         {selectedAnswer === exercise.correctAnswer.toString() ? 'Chính xác! Tuyệt vời!' : 'Chưa chính xác'}
                       </p>
                       <p className="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">
-                        <strong>Giải thích:</strong> <RenderWithMath content={exercise.explanation} />
+                        <strong>Giải thích:</strong> {exercise.chapterId === '1' ? (
+                          <MathProvider children={exercise.explanation} />
+                        ) : exercise.chapterId === '2' ? (
+                          <RenderWithMath content={exercise.explanation} />
+                        ) : (
+                          <RenderWithMath content={exercise.explanation} />
+                        )}
                       </p>
                     </div>
                   </div>

@@ -15,6 +15,7 @@ interface Exercise {
   explanation: string
   difficulty: 'basic' | 'intermediate' | 'advanced'
   category: string
+  chapterId: string
 }
 
 interface AIAnalysis {
@@ -675,10 +676,10 @@ export default function PracticePage() {
             {/* Question */}
             <div className="mb-6">
               <p className="text-lg text-gray-800 dark:text-white leading-relaxed">
-                {chapterId === '1' ? (
+                {exercise.chapterId === '1' ? (
                   <MathProvider children={exercise.question} />
-                  // ) : chapterId === '2' ? (
-                  //   <RenderWithMath content={exercise.question} />
+                ) : exercise.chapterId === '2' ? (
+                  <RenderWithMath content={exercise.question} />
                 ) : (
                   <RenderWithMath content={exercise.question} />
                 )}
@@ -712,9 +713,9 @@ export default function PracticePage() {
                         <span className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center text-sm font-medium mr-3">
                           {String.fromCharCode(65 + index)}
                         </span>
-                        {chapterId === '1' ? (
+                        {exercise.chapterId === '1' ? (
                           <MathProvider children={option} />
-                        ) : chapterId === '2' ? (
+                        ) : exercise.chapterId === '2' ? (
                           <RenderWithMath content={option} />
                         ) : (
                           <RenderWithMath content={option} />
@@ -791,9 +792,9 @@ export default function PracticePage() {
                       {isCorrect ? 'Chính xác!' : 'Chưa chính xác'}
                     </span>
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300">{chapterId === '1' ? (
+                  <p className="text-gray-700 dark:text-gray-300">{exercise.chapterId === '1' ? (
                     <MathProvider children={exercise.explanation} />
-                  ) : chapterId === '2' ? (
+                  ) : exercise.chapterId === '2' ? (
                     <RenderWithMath content={exercise.explanation} />
                   ) : (
                     <RenderWithMath content={exercise.explanation} />
