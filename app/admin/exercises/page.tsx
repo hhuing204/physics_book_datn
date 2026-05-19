@@ -14,7 +14,7 @@ interface VariableDefinition {
 interface ExerciseBlueprint {
   id: number
   lessonId: string
-  lessonTitle: string
+  chapterId: string
   type: 'multiple-choice' | 'calculation'
   questionTemplate: string
   correctAnswerTemplate: string
@@ -31,7 +31,7 @@ export default function AdminExerciseBlueprints() {
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingBlueprint, setEditingBlueprint] = useState<ExerciseBlueprint | null>(null)
-  const [filterLesson, setFilterLesson] = useState<string>('all')
+  const [filterLesson, setFilterLesson] = useState<string>('')
   const [filterDifficulty, setFilterDifficulty] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
   const [filterCategory, setFilterCategory] = useState<string>('all')
@@ -39,6 +39,13 @@ export default function AdminExerciseBlueprints() {
   const [page, setPage] = useState(1)
   const [pageSize] = useState(20)
   const [newVarName, setNewVarName] = useState('')
+  const [lessons, setLessons] = useState<Array<{
+    id: string
+    title?: string
+    chapterId: string
+    chapterOrder?: number
+    chapterTitle?: string
+  }>>([])
 
   const [formData, setFormData] = useState({
     lessonId: '1',
@@ -51,14 +58,46 @@ export default function AdminExerciseBlueprints() {
     variables: {} as Record<string, VariableDefinition | string>
   })
 
-  const lessons = [
-    { id: '1', title: 'Mô tả dao động' },
-    { id: '2', title: 'Phương trình dao động điều hoà' },
-    { id: '3', title: 'Năng lượng trong dao động điều hoà' },
-    { id: '4', title: 'Dao động tắt dần và cộng hưởng' }
-  ]
-
   useEffect(() => {
+    const fetchLessons = async () => {
+      try {
+        const res = await fetch('/api/chapters')
+        if (!res.ok) {
+          console.error('Failed to fetch chapters for lessons filter')
+          return
+        }
+
+        const chapters = await res.json()
+        if (!Array.isArray(chapters)) {
+          return
+        }
+
+        const lessonOptions = chapters.flatMap((chapter: any) => {
+          if (!Array.isArray(chapter.lessons)) return []
+          return chapter.lessons.map((lesson: any) => ({
+            id: lesson.id,
+            title: lesson.title,
+            chapterId: chapter.id || chapter.chapterId || '',
+            chapterOrder: chapter.order,
+            chapterTitle: chapter.title
+          }))
+        })
+
+        lessonOptions.sort((a, b) => {
+          const chapterOrderA = a.chapterOrder ?? 0
+          const chapterOrderB = b.chapterOrder ?? 0
+          if (chapterOrderA !== chapterOrderB) return chapterOrderA - chapterOrderB
+          return Number(a.id) - Number(b.id)
+        })
+
+        setLessons(lessonOptions)
+      } catch (error) {
+        console.error('Error fetching chapters for lessons filter:', error)
+      }
+    }
+
+    fetchLessons()
+
     if (user && user.role !== 'admin') {
       router.push('/')
       return
@@ -111,7 +150,7 @@ export default function AdminExerciseBlueprints() {
       const payload = {
         id: newId,
         lessonId: formData.lessonId,
-        lessonTitle: lessons.find(l => l.id === formData.lessonId)?.title || '',
+        chapterId: lessons.find(l => l.id === formData.lessonId)?.chapterId || '',
         type: formData.type,
         questionTemplate: formData.questionTemplate,
         correctAnswerTemplate: formData.correctAnswerTemplate,
@@ -209,7 +248,7 @@ export default function AdminExerciseBlueprints() {
   }
 
   const filteredBlueprints = blueprints.filter(bp => {
-    if (filterLesson !== 'all' && bp.lessonId !== filterLesson) return false
+    if (filterLesson && bp.lessonId !== filterLesson) return false
     if (filterDifficulty !== 'all' && bp.difficulty !== filterDifficulty) return false
     if (filterType !== 'all' && bp.type !== filterType) return false
     if (filterCategory !== 'all' && bp.category !== filterCategory) return false
@@ -302,10 +341,10 @@ export default function AdminExerciseBlueprints() {
                 }}
                 className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
               >
-                <option value="all">Tất cả</option>
-                {lessons.map(lesson => (
+                <option value="">Chọn bài học</option>
+                {lessons.map((lesson: any) => (
                   <option key={lesson.id} value={lesson.id}>
-                    Bài {lesson.id} - {lesson.title}
+                    {`Bài ${lesson.id}: ${lesson.title || lesson.id} - Chương ${lesson.chapterOrder ?? lesson.chapterId}: ${lesson.chapterTitle || lesson.chapterId}`}
                   </option>
                 ))}
               </select>
@@ -387,7 +426,7 @@ export default function AdminExerciseBlueprints() {
               <div className="mt-auto">
                 <button
                   onClick={() => {
-                    setFilterLesson('all')
+                    setFilterLesson('')
                     setFilterDifficulty('all')
                     setFilterType('all')
                     setFilterCategory('all')

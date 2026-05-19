@@ -111,6 +111,8 @@ export default function ChapterLessonsPage() {
     // Tính completion rate an toàn
     const completedCount = lessonIds.filter(id => isLessonCompleted ? isLessonCompleted(id) : false).length
     const completionRate = lessonIds.length > 0 ? Math.round((completedCount / lessonIds.length) * 100) : 0
+    const chapterSlug = chapter.chapterId || chapter.id || ''
+    const chapterNumber = chapter.chapterId || chapter.id?.replace(/^chapter-/, '') || chapterSlug
 
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -156,14 +158,14 @@ export default function ChapterLessonsPage() {
                 )}
 
                 {/* Chapter Info */}
-                <div className={`bg-gradient-to-r ${getChapterColor(chapter.chapterId)} rounded-2xl p-8 text-white mb-8 relative overflow-hidden`}>
+                <div className={`bg-gradient-to-r ${getChapterColor(chapterNumber)} rounded-2xl p-8 text-white mb-8 relative overflow-hidden`}>
                     <div className="absolute -right-16 -top-16 w-40 h-40 bg-white/10 rounded-full"></div>
                     <div className="absolute -left-16 -bottom-16 w-40 h-40 bg-white/10 rounded-full"></div>
 
                     <div className="relative z-10">
                         <img src={chapter.icon} alt="icon" width={32} height={32} />
                         <h2 className="text-3xl font-bold mb-2">{chapter.title}</h2>
-                        <p className="text-white/90 max-w-2xl">{chapter.subtitle || chapter.description || `Chương ${chapter.chapterId}: ${chapter.title}`}</p>
+                        <p className="text-white/90 max-w-2xl">{chapter.subtitle || chapter.description || `Chương ${chapterNumber}: ${chapter.title}`}</p>
                     </div>
                 </div>
 
@@ -173,14 +175,14 @@ export default function ChapterLessonsPage() {
                         {chapter.lessons.map((lesson: Lesson) => (
                             <Link
                                 key={lesson.id}
-                                href={`/lesson/${chapter.chapterId}/${lesson.id}`}
+                                href={`/lesson/${chapterSlug}/${lesson.id}`}
                                 className="block group"
                             >
                                 <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-md hover:shadow-xl transition-all border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700">
                                     <div className="flex items-start gap-4">
                                         {/* Lesson number */}
                                         <div className="relative">
-                                            <div className={`w-12 h-12 bg-gradient-to-r ${getChapterColor(chapter.chapterId)} rounded-xl flex items-center justify-center text-white font-bold text-lg`}>
+                                            <div className={`w-12 h-12 bg-gradient-to-r ${getChapterColor(chapterNumber)} rounded-xl flex items-center justify-center text-white font-bold text-lg`}>
                                                 {lesson.id}
                                             </div>
                                             {isLessonCompleted && isLessonCompleted(parseInt(lesson.id)) && (
@@ -234,11 +236,11 @@ export default function ChapterLessonsPage() {
                 {chapter.lessons && chapter.lessons.length > 0 && (
                     <div className="mt-8 text-center">
                         <Link
-                            href={`/practice?chapterId=${chapter.chapterId}`}
+                            href={`/practice?chapterId=${chapterSlug}`}
                             className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all"
                         >
                             <BookOpen className="w-5 h-5 mr-2" />
-                            Luyện tập chương {chapter.chapterId}
+                            Luyện tập chương {chapterNumber}
                             <ChevronRight className="w-5 h-5 ml-2" />
                         </Link>
                     </div>

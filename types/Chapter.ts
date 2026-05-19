@@ -5,17 +5,29 @@ export interface Slide {
   title: string
   content: string
   // Chỉ giữ các type mà SlidePresentation hỗ trợ
-  type: 'intro' | 'defination' | 'example' | 'summary' | 'simulation'
-  formulas?: string[]
+  type: string
   images?: string[]
   notes?: string
   simulationType?: string
 }
 
+export interface Formula {
+  id: string
+  latex: string
+}
+
+export interface ImageAsset {
+  id: string
+  src: string
+}
+
+
 export interface Lesson {
   id: string
   title: string
   slides?: Slide[]
+  formulas?: Formula[]
+  images?: ImageAsset[]
   duration?: string
   description?: string
 }

@@ -14,7 +14,7 @@ interface Slide {
   id: number
   title: string
   content: string
-  type: 'intro' | 'defination' | 'example' | 'summary' | 'simulation'
+  type: string
   formulas?: string[]
   images?: string[]
   notes?: string
@@ -36,7 +36,7 @@ export interface SlidePresentationRef {
   getCurrentSlide: () => number
 }
 
-const SlidePresentation = forwardRef<SlidePresentationRef, SlidePresentationProps>(({
+const SlidePresentationV2 = forwardRef<SlidePresentationRef, SlidePresentationProps>(({
   slides,
   chapterId,
   lessonTitle,
@@ -139,7 +139,7 @@ const SlidePresentation = forwardRef<SlidePresentationRef, SlidePresentationProp
       const endTime = new Date()
       const timeSpent = Math.round((endTime.getTime() - startTime.getTime()) / 1000 / 60)
 
-      await updateProgress(lessonId, true, timeSpent)
+      await updateProgress(String(lessonId), true, timeSpent)
       onLessonComplete?.()
     }
   }
@@ -375,6 +375,6 @@ const SlidePresentation = forwardRef<SlidePresentationRef, SlidePresentationProp
   )
 })
 
-SlidePresentation.displayName = 'SlidePresentation'
+SlidePresentationV2.displayName = 'SlidePresentationV2'
 
-export default SlidePresentation
+export default SlidePresentationV2

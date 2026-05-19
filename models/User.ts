@@ -5,7 +5,6 @@ export interface IUser {
   email: string;
   password: string;
   name: string;
-  username?: string;
   avatar?: string;
   role?: 'user' | 'admin';
   isActive?: boolean;
@@ -31,12 +30,6 @@ const UserSchema = new mongoose.Schema<IUser>(
       type: String,
       required: [true, 'Name is required'],
       trim: true,
-    },
-    username: {
-      type: String,
-      trim: true,
-      unique: true,
-      sparse: true,
     },
     avatar: {
       type: String,

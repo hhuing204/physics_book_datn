@@ -43,16 +43,16 @@ interface ExerciseResult {
 
 export default function PracticePage() {
 
-  const searchParams = useSearchParams() // Lấy params từ URL
-  const chapterId = searchParams.get('chapterId') // Lấy chapterId từ URL
+  const searchParams = useSearchParams()
+  const chapterId = searchParams.get('chapterId')
+  const accessCodeFromUrl = searchParams.get('accessCode')
 
-  //State for AI
+  // State for AI
   const [showAIAnalysis, setShowAIAnalysis] = useState(false)
   const [aiAnalysis, setAiAnalysis] = useState<AIAnalysis | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [exerciseResults, setExerciseResults] = useState<ExerciseResult[]>([])
   const [userAnswers, setUserAnswers] = useState<{ [key: number]: string | number }>({})
-
 
   const [mounted, setMounted] = useState(false)
   const [theme, setTheme] = useState('light')
@@ -65,59 +65,120 @@ export default function PracticePage() {
   const [showFinalResult, setShowFinalResult] = useState(false)
   const [exercises, setExercises] = useState<Exercise[]>([])
   const [loading, setLoading] = useState(true)
-  // const [selectedChapter, setSelectedChapter] = useState<string>('all');
+  const [accessCodeInput, setAccessCodeInput] = useState('')
+  const [accessCodeError, setAccessCodeError] = useState('')
+  const [practiceTest, setPracticeTest] = useState<any | null>(null)
+  const [practiceProgress, setPracticeProgress] = useState<any | null>(null)
+  const [timeLeftSeconds, setTimeLeftSeconds] = useState<number | null>(null)
+  const [isSavingProgress, setIsSavingProgress] = useState(false)
+  const [elapsedSeconds, setElapsedSeconds] = useState<number>(0)
+
   const router = useRouter()
 
-  // Fetch exercises từ database
-  useEffect(() => {
-    const fetchExercises = async () => {
-      try {
-        setLoading(true)
-        // Xây dựng URL với chapterId
-        let url = '/api/exercises'
-        if (chapterId && chapterId !== 'all') {
-          url += `?chapterId=${chapterId}`
+  const loadPracticeTest = async (code?: string) => {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem('auth_token')
+      if (code) {
+        const progressRes = await fetch(`/api/practice-progress?accessCode=${encodeURIComponent(code)}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+        const progressData = await progressRes.json()
+
+        if (!progressRes.ok) {
+          setAccessCodeError(progressData.message || 'Không thể tải đề luyện tập')
+          setExercises([])
+          setPracticeProgress(null)
+          setPracticeTest(null)
+          return
         }
 
-        const response = await fetch(url)
-        const data = await response.json()
+        const { practiceTest: test, progress } = progressData
+        if (!test) {
+          setAccessCodeError('Không tìm thấy đề luyện tập với mã này.')
+          return
+        }
 
-        if (data.success && data.exercises) {
-          // Nhóm bài tập theo lessonId
-          const exercisesByLesson: { [key: string]: Exercise[] } = {}
+        setPracticeTest(test)
 
-          data.exercises.forEach((ex: Exercise) => {
-            if (!exercisesByLesson[ex.lessonId]) {
-              exercisesByLesson[ex.lessonId] = []
-            }
-            exercisesByLesson[ex.lessonId].push(ex)
+        if (!progress || progress.status === 'finished') {
+          const newProgressRes = await fetch('/api/practice-progress', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ accessCode: test.accessCode }),
           })
-
-          const selectedExercises: Exercise[] = []
-          const lessonIds = Object.keys(exercisesByLesson)
-
-          for (const lessonId of lessonIds) {
-            const lessonExercises = exercisesByLesson[lessonId]
-            // Lấy ngẫu nhiên 3 câu cho mỗi bài học
-            const shuffled = [...lessonExercises].sort(() => Math.random() - 0.5)
-            const selected = shuffled.slice(0, 3)
-            selectedExercises.push(...selected)
+          const newProgressData = await newProgressRes.json()
+          if (newProgressRes.ok) {
+            setPracticeProgress(newProgressData.progress)
+            setExercises(newProgressData.practiceTest.exercises || [])
+            setStartTime(new Date(newProgressData.progress.startAt))
+          } else {
+            setAccessCodeError(newProgressData.message || 'Không thể bắt đầu lần làm mới')
           }
-
-          // Shuffle tất cả các câu đã chọn
-          const finalExercises = selectedExercises.sort(() => Math.random() - 0.5)
-          setExercises(finalExercises)
-          setCompleted(new Array(finalExercises.length).fill(false))
+        } else {
+          setPracticeProgress(progress)
+          setExercises(test.exercises || [])
+          setStartTime(new Date(progress.startAt))
+          if (progress.answers?.length) {
+            const answeredIds = progress.answers.map((answer: any) => answer.exerciseId)
+            setCompleted(test.exercises.map((ex: Exercise) => answeredIds.includes(ex.id)))
+            setScore(progress.answers.filter((answer: any) => answer.correct).length)
+            const firstIncomplete = test.exercises.findIndex((ex: Exercise) => !answeredIds.includes(ex.id))
+            setCurrentExercise(firstIncomplete >= 0 ? firstIncomplete : 0)
+          }
         }
-      } catch (error) {
-        console.error('Error fetching exercises:', error)
-      } finally {
-        setLoading(false)
+        return
       }
-    }
 
-    fetchExercises()
-  }, [chapterId]) // Thêm selectedChapter vào dependency
+      if (chapterId) {
+        const url = `/api/practice-tests?default=true&chapterId=${encodeURIComponent(chapterId)}`
+        const testRes = await fetch(url)
+        const testData = await testRes.json()
+        if (!testRes.ok) {
+          setAccessCodeError(testData.message || 'Không thể tải đề luyện tập mặc định')
+          return
+        }
+        const test = testData.test
+        const createRes = await fetch('/api/practice-progress', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ accessCode: test.accessCode }),
+        })
+        const createData = await createRes.json()
+        if (createRes.ok) {
+          setPracticeTest(test)
+          setPracticeProgress(createData.progress)
+          setExercises(test.exercises || [])
+          setStartTime(new Date(createData.progress.startAt))
+        } else {
+          setAccessCodeError(createData.message || 'Không thể bắt đầu bài luyện tập')
+        }
+        return
+      }
+
+      setExercises([])
+    } catch (error) {
+      console.error('Error loading practice test:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    const init = async () => {
+      if (!mounted) return
+      await loadPracticeTest(accessCodeFromUrl ?? undefined)
+    }
+    init()
+  }, [mounted, chapterId, accessCodeFromUrl])
 
 
   useEffect(() => {
@@ -128,11 +189,35 @@ export default function PracticePage() {
     setStartTime(new Date())
   }, [])
 
+  useEffect(() => {
+    if (!practiceProgress?.startAt || showFinalResult) return
+
+    const updateTime = () => {
+      const start = new Date(practiceProgress.startAt).getTime()
+      const elapsed = Math.floor((Date.now() - start) / 1000)
+      setElapsedSeconds(elapsed)
+    }
+
+    updateTime()
+    const interval = setInterval(updateTime, 1000)
+    return () => clearInterval(interval)
+  }, [practiceProgress, showFinalResult])
+
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light'
     setTheme(newTheme)
     document.documentElement.className = newTheme
     localStorage.setItem('physics-book-theme', newTheme)
+  }
+
+  const handleAccessCodeSubmit = () => {
+    const trimmedCode = accessCodeInput.trim().toUpperCase()
+    if (!trimmedCode) {
+      setAccessCodeError('Vui lòng nhập mã truy cập đề.')
+      return
+    }
+    setAccessCodeError('')
+    router.push(`/practice?accessCode=${encodeURIComponent(trimmedCode)}`)
   }
 
   const handleAnswerSelect = (answer: string | number) => {
@@ -192,6 +277,45 @@ export default function PracticePage() {
     setCompleted(newCompleted)
 
     setShowResult(true)
+
+    if (practiceProgress?.accessCode) {
+      const token = localStorage.getItem('auth_token')
+      const updatedAnswers = [...exerciseResults.filter(Boolean), {
+        id: exercise.id,
+        question: exercise.question,
+        difficulty: exercise.difficulty,
+        lessonId: exercise.lessonId,
+        correct: isCorrect,
+        selectedAnswer: selectedAnswer,
+        correctAnswer: exercise.correctAnswer,
+        explanation: exercise.explanation,
+      }]
+
+      const payload = {
+        accessCode: practiceProgress.accessCode,
+        answers: updatedAnswers.map((item) => ({
+          exerciseId: String(item.id),
+          answer: item.selectedAnswer,
+          correct: item.correct,
+          question: item.question,
+          difficulty: item.difficulty,
+          lessonId: item.lessonId,
+          correctAnswer: item.correctAnswer,
+          explanation: item.explanation,
+        })),
+        score: updatedAnswers.filter((item) => item.correct).length,
+      }
+
+      setIsSavingProgress(true)
+      fetch('/api/practice-progress', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      }).catch((error) => console.error('Error saving progress:', error)).finally(() => setIsSavingProgress(false))
+    }
   }
 
   //AI analyze
@@ -302,14 +426,40 @@ export default function PracticePage() {
     }
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentExercise < exercises.length - 1) {
       setCurrentExercise(currentExercise + 1)
       setSelectedAnswer('')
       setShowResult(false)
-    } else {
-      setShowFinalResult(true)
+      return
     }
+
+    if (practiceProgress?.accessCode) {
+      const token = localStorage.getItem('auth_token')
+      const submittedAt = new Date().toISOString()
+      const payload = {
+        accessCode: practiceProgress.accessCode,
+        answers: [...exerciseResults].map((item) => ({
+          exerciseId: String(item.id),
+          answer: item.selectedAnswer,
+          correct: item.correct,
+          question: item.question,
+        })),
+        score,
+        submittedAt,
+      }
+      setIsSavingProgress(true)
+      await fetch('/api/practice-progress', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      }).catch((error) => console.error('Error submitting progress:', error)).finally(() => setIsSavingProgress(false))
+    }
+
+    setShowFinalResult(true)
   }
 
   const handlePrevious = () => {
@@ -320,46 +470,46 @@ export default function PracticePage() {
     }
   }
 
-  const handleRestart = () => {
+  const handleRestart = async () => {
+    if (!practiceTest) {
+      setCurrentExercise(0)
+      setSelectedAnswer('')
+      setShowResult(false)
+      setScore(0)
+      setShowFinalResult(false)
+      setStartTime(new Date())
+      return
+    }
+
     setCurrentExercise(0)
     setSelectedAnswer('')
     setShowResult(false)
     setScore(0)
     setShowFinalResult(false)
     setStartTime(new Date())
+    setExerciseResults([])
+    setUserAnswers({})
+    setCompleted(new Array(practiceTest.exercises.length).fill(false))
 
-    // Fetch lại exercises mới
-    const fetchExercises = async () => {
+    if (practiceProgress?.accessCode) {
       try {
-        setLoading(true)
-        const response = await fetch('/api/exercises')
+        const token = localStorage.getItem('auth_token')
+        const response = await fetch('/api/practice-progress', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ accessCode: practiceProgress.accessCode }),
+        })
         const data = await response.json()
-
-        if (data.success && data.exercises) {
-          const selectedExercises: Exercise[] = []
-
-          for (let lessonId = 1; lessonId <= 4; lessonId++) {
-            const lessonExercises = data.exercises.filter(
-              (ex: Exercise) => ex.lessonId === lessonId.toString()
-            )
-
-            const shuffled = [...lessonExercises].sort(() => Math.random() - 0.5)
-            const selected = shuffled.slice(0, 6)
-            selectedExercises.push(...selected)
-          }
-
-          const finalExercises = selectedExercises.sort(() => Math.random() - 0.5)
-          setExercises(finalExercises)
-          setCompleted(new Array(finalExercises.length).fill(false))
+        if (response.ok) {
+          setPracticeProgress(data.progress)
         }
       } catch (error) {
-        console.error('Error fetching exercises:', error)
-      } finally {
-        setLoading(false)
+        console.error('Error restarting progress:', error)
       }
     }
-
-    fetchExercises()
   }
 
   const getDifficultyColor = (difficulty: string) => {
@@ -407,6 +557,41 @@ export default function PracticePage() {
     )
   }
 
+  if (!accessCodeFromUrl && !chapterId) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center px-4">
+        <div className="max-w-xl w-full rounded-3xl bg-white dark:bg-gray-800 p-8 shadow-xl border border-gray-200 dark:border-gray-700">
+          <h1 className="text-3xl font-semibold text-gray-900 dark:text-white mb-3">Nhập mã truy cập đề luyện tập</h1>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">
+            Bạn có thể nhập mã đề mà bạn đã tạo hoặc nhận được từ danh sách luyện tập. Nếu muốn luyện tổng hợp, truy cập lại trang bài tập để chọn chương.
+          </p>
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={accessCodeInput}
+              onChange={(e) => setAccessCodeInput(e.target.value)}
+              placeholder="Nhập mã truy cập"
+              className="w-full rounded-2xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 px-4 py-3 text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500/20 outline-none"
+            />
+            {accessCodeError && <p className="text-sm text-red-600">{accessCodeError}</p>}
+            <button
+              onClick={handleAccessCodeSubmit}
+              className="w-full rounded-2xl bg-indigo-600 px-5 py-3 text-white font-semibold hover:bg-indigo-700 transition-colors"
+            >
+              Truy cập đề theo mã
+            </button>
+            <button
+              onClick={() => router.push('/exercises')}
+              className="w-full rounded-2xl border border-gray-300 dark:border-gray-700 px-5 py-3 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-900 transition-colors"
+            >
+              Quay lại chọn chương / bài
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (exercises.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -444,7 +629,7 @@ export default function PracticePage() {
 
   if (showFinalResult) {
     const percentage = Math.round((score / exercises.length) * 100)
-    const totalTime = startTime ? Math.floor((new Date().getTime() - startTime.getTime()) / 1000) : 0
+    const totalTime = elapsedSeconds || (startTime ? Math.floor((new Date().getTime() - startTime.getTime()) / 1000) : 0)
     const minutes = Math.floor(totalTime / 60)
     const seconds = totalTime % 60
     const timeTaken = totalTime / 60
@@ -475,7 +660,7 @@ export default function PracticePage() {
 
             <div className="grid grid-cols-2 gap-4 mb-8">
               <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 rounded-xl p-6">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Thời gian</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">Thời gian đã làm</div>
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {minutes}:{seconds.toString().padStart(2, '0')}
                 </div>
@@ -655,11 +840,27 @@ export default function PracticePage() {
       {/* Main Content */}
       <main className="pt-20 pb-8">
         <div className="max-w-3xl mx-auto p-6">
+          {/* Test Code Header */}
+          {practiceProgress && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-indigo-100 to-indigo-50 dark:from-indigo-900/30 dark:to-indigo-800/20 rounded-2xl border border-indigo-200 dark:border-indigo-700">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Mã đề thi</p>
+                  <p className="text-3xl font-bold text-indigo-900 dark:text-indigo-100 font-mono tracking-widest">{practiceProgress.accessCode}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Thời gian đã làm</p>
+                  <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100 font-mono">{Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Exercise Card */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl border border-gray-100 dark:border-gray-700">
             {/* Exercise Header */}
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
                 <span className="px-3 py-1 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 rounded-full text-sm font-medium">
                   Bài {exercise.lessonId}
                 </span>
@@ -668,8 +869,8 @@ export default function PracticePage() {
                 </span>
               </div>
 
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Câu {currentExercise + 1}/{exercises.length}
+              <div className="text-right text-sm text-gray-500 dark:text-gray-400">
+                <div>Câu {currentExercise + 1}/{exercises.length}</div>
               </div>
             </div>
 
@@ -827,6 +1028,7 @@ export default function PracticePage() {
           {/* Score Display */}
           <div className="mt-6 text-center text-gray-600 dark:text-gray-400">
             <p>Điểm hiện tại: <span className="font-bold text-blue-600 dark:text-blue-400">{score}/{currentExercise + (showResult ? 1 : 0)}</span></p>
+            <p className="text-xs mt-2">Thời gian: {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}</p>
           </div>
         </div>
       </main>

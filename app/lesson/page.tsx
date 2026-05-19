@@ -102,46 +102,63 @@ export default function LessonListPage() {
                 {/* Chapters grid */}
                 {!loading && (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {chapters.map((chapter) => (
-                            <Link
-                                key={chapter._id.toString()}
-                                href={`/lesson/${chapter.chapterId}`}
-                                className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
-                            >
-                                <div className={`h-32 bg-gradient-to-r ${getChapterColor(chapter.chapterId)} p-6 relative overflow-hidden`}>
-                                    <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full"></div>
-                                    <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full"></div>
+                        {chapters.map((chapter) => {
+                            const chapterSlug =
+                                chapter.chapterId || chapter.id || chapter._id.toString();
 
-                                    <div className="relative z-10">
-                                        <img src={chapter.icon} alt="icon" width={32} height={32} />
-                                        <h2 className="text-2xl font-bold text-white">
-                                            Chương {chapter.chapterId}
-                                        </h2>
-                                    </div>
-                                </div>
+                            const chapterNumber =
+                                chapter.chapterId ||
+                                chapter.id?.replace(/^chapter-/, "") ||
+                                chapterSlug;
 
-                                <div className="p-6">
-                                    <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-                                        {chapter.title}
-                                    </h3>
-                                    <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
-                                        {chapter.subtitle || chapter.description || `Chương ${chapter.chapterId}: ${chapter.title}`}
-                                    </p>
+                            return (
+                                <Link
+                                    key={chapter._id.toString()}
+                                    href={`/lesson/${chapterSlug}`}
+                                    className="group bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
+                                >
+                                    <div
+                                        className={`h-32 bg-gradient-to-r ${getChapterColor(
+                                            chapterNumber
+                                        )} p-6 relative overflow-hidden`}
+                                    >
+                                        <div className="absolute -right-8 -top-8 w-24 h-24 bg-white/10 rounded-full"></div>
+                                        <div className="absolute -left-8 -bottom-8 w-24 h-24 bg-white/10 rounded-full"></div>
 
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                                            <BookOpen className="w-4 h-4 mr-1" />
-                                            <span>{chapter.lessons?.length || 0} bài học</span>
-                                        </div>
-
-                                        <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
-                                            <span>Xem chi tiết</span>
-                                            <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition" />
+                                        <div className="relative z-10">
+                                            <img src={chapter.icon} alt="icon" width={32} height={32} />
+                                            <h2 className="text-2xl font-bold text-white">
+                                                Chương {chapterNumber}
+                                            </h2>
                                         </div>
                                     </div>
-                                </div>
-                            </Link>
-                        ))}
+
+                                    <div className="p-6">
+                                        <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                                            {chapter.title}
+                                        </h3>
+
+                                        <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+                                            {chapter.subtitle ||
+                                                chapter.description ||
+                                                `Chương ${chapterNumber}: ${chapter.title}`}
+                                        </p>
+
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                                <BookOpen className="w-4 h-4 mr-1" />
+                                                <span>{chapter.lessons?.length || 0} bài học</span>
+                                            </div>
+
+                                            <div className="flex items-center text-blue-600 dark:text-blue-400 font-medium">
+                                                <span>Xem chi tiết</span>
+                                                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </Link>
+                            );
+                        })}
                     </div>
                 )}
             </main>

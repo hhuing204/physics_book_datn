@@ -1,22 +1,25 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { IUserProgress } from '@/models/UserProgress';
+import { ITheoryProgress } from '@/models/TheoryProgress';
 
 interface UseProgressReturn {
-  progress: { [key: number]: IUserProgress };
+  progress: { [key: string]: ITheoryProgress };
   loading: boolean;
-  updateProgress: (lessonId: number, completed: boolean, timeSpent?: number) => Promise<boolean>;
-  isLessonCompleted: (lessonId: number) => boolean;
+  updateProgress: (
+    lessonId: string,
+    completed: boolean,
+    timeSpent?: number
+  ) => Promise<boolean>;
+  isLessonCompleted: (lessonId: string) => boolean;
   getCompletionRate: () => number;
   getTotalTimeSpent: () => number;
 }
 
 export const useProgress = (): UseProgressReturn => {
-  const [progress, setProgress] = useState<{ [key: number]: IUserProgress }>({});
+  const [progress, setProgress] = useState<{ [key: string]: ITheoryProgress }>({});
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  // Fetch progress data when user is available
   useEffect(() => {
     if (user) {
       fetchProgress();
@@ -50,7 +53,11 @@ export const useProgress = (): UseProgressReturn => {
     }
   };
 
-  const updateProgress = async (lessonId: number, completed: boolean, timeSpent?: number): Promise<boolean> => {
+  const updateProgress = async (
+    lessonId: string,
+    completed: boolean,
+    timeSpent?: number
+  ): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -72,13 +79,15 @@ export const useProgress = (): UseProgressReturn => {
 
       if (response.ok) {
         const data = await response.json();
-        setProgress(prev => ({
+
+        setProgress((prev) => ({
           ...prev,
           [lessonId]: data.progress,
         }));
+
         return true;
       }
-      
+
       return false;
     } catch (error) {
       console.error('Error updating progress:', error);
@@ -86,18 +95,24 @@ export const useProgress = (): UseProgressReturn => {
     }
   };
 
-  const isLessonCompleted = (lessonId: number): boolean => {
-    return progress[lessonId]?.completed || false;
+  const isLessonCompleted = (lessonId: string): boolean => {
+    return !!progress[lessonId]?.completedAt;
   };
 
   const getCompletionRate = (): number => {
-    const totalLessons = 4; // We have 4 lessons
-    const completedLessons = Object.values(progress).filter(p => p.completed).length;
+    const totalLessons = 4; // keep your existing logic
+    const completedLessons = Object.values(progress).filter(
+      (p) => !!p.completedAt
+    ).length;
+
     return Math.round((completedLessons / totalLessons) * 100);
   };
 
   const getTotalTimeSpent = (): number => {
-    return Object.values(progress).reduce((total, p) => total + (p.timeSpent || 0), 0);
+    return Object.values(progress).reduce(
+      (total, p) => total + (p.timeSpent || 0),
+      0
+    );
   };
 
   return {

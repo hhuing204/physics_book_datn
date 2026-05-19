@@ -45,10 +45,10 @@ export default function UserMenu({ user }: UserMenuProps) {
         <span className="text-sm font-medium text-gray-700 dark:text-gray-300 hidden sm:inline">
           {user.name}
         </span>
-        <svg 
+        <svg
           className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-          fill="none" 
-          stroke="currentColor" 
+          fill="none"
+          stroke="currentColor"
           viewBox="0 0 24 24"
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -71,7 +71,16 @@ export default function UserMenu({ user }: UserMenuProps) {
                 </span>
               )}
             </div>
-            
+
+            <a
+              href="/user"
+              className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-900/20 transition-colors flex items-center"
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.121 17.804A9 9 0 1118.88 6.196M12 11a3 3 0 100-6 3 3 0 000 6z" />
+              </svg>
+              Thông tin người dùng
+            </a>
             {user.role === 'admin' && (
               <a
                 href="/admin/dashboard"
@@ -83,7 +92,7 @@ export default function UserMenu({ user }: UserMenuProps) {
                 Dashboard
               </a>
             )}
-            
+
             <button
               onClick={handleLogout}
               className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center"

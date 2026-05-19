@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import UserProgress from '@/models/UserProgress';
+import TheoryProgress from '@/models/TheoryProgress';
 import Chapter from '@/models/Chapter';
 
 async function verifyAdmin(request: NextRequest) {
@@ -16,14 +16,15 @@ async function verifyAdmin(request: NextRequest) {
   try {
     const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
     const decoded = jwt.verify(token, jwtSecret) as { userId: string };
-    
+
     await dbConnect();
+
     const user = await User.findById(decoded.userId);
-    
+
     if (!user || user.role !== 'admin') {
       return null;
     }
-    
+
     return user;
   } catch (error) {
     return null;
@@ -33,7 +34,7 @@ async function verifyAdmin(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const admin = await verifyAdmin(request);
-    
+
     if (!admin) {
       return NextResponse.json(
         { message: 'Unauthorized - Admin access required' },
@@ -42,60 +43,89 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
-    
-    // Get user statistics (không tính admin)
-    const totalUsers = await User.countDocuments({ role: { $ne: 'admin' } });
-    const activeUsers = await User.countDocuments({ isActive: true, role: { $ne: 'admin' } });
-    // Get users created this month (không tính admin)
+
+    // Get user statistics (exclude admin)
+    const totalUsers = await User.countDocuments({
+      role: { $ne: 'admin' },
+    });
+
+    const activeUsers = await User.countDocuments({
+      isActive: true,
+      role: { $ne: 'admin' },
+    });
+
+    // Get users created this month (exclude admin)
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDayOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      1
+    );
+
     const newThisMonth = await User.countDocuments({
       createdAt: { $gte: firstDayOfMonth },
-      role: { $ne: 'admin' }
+      role: { $ne: 'admin' },
     });
 
     // Get chapter statistics
     const totalChapters = await Chapter.countDocuments();
-    const publishedChapters = await Chapter.countDocuments({ isPublished: true });
-    const draftChapters = totalChapters - publishedChapters;
 
-    // Get lesson statistics (tổng số bài học trong tất cả các chương)
-    const allChapters = await Chapter.find();
-    let totalLessons = 0;
-    allChapters.forEach(chap => {
-      if (Array.isArray(chap.lessons)) totalLessons += chap.lessons.length;
+    const publishedChapters = await Chapter.countDocuments({
+      isPublished: true,
     });
 
-    // Get progress statistics
+    const draftChapters = totalChapters - publishedChapters;
 
-    // Lấy danh sách user thường (không phải admin)
-    const normalUsers = await User.find({ role: { $ne: 'admin' } }).select('_id');
-    const normalUserIds = normalUsers.map(u => u._id.toString());
+    // Get lesson statistics
+    const allChapters = await Chapter.find();
 
-    // Chỉ lấy progress của user thường
-    const totalProgress = await UserProgress.countDocuments({ userId: { $in: normalUserIds } });
-    const usersWithProgress = await UserProgress.distinct('userId', { userId: { $in: normalUserIds } });
+    let totalLessons = 0;
 
-    // Calculate average completion chỉ cho user thường
-    const progressData = await UserProgress.find({ userId: { $in: normalUserIds } });
-    let totalCompletion = 0;
-    let completionCount = 0;
-
-    progressData.forEach((progress) => {
-      if (progress.chapters) {
-        progress.chapters.forEach((chapter: any) => {
-          if (chapter.totalSections > 0) {
-            const rate = (chapter.completedSections / chapter.totalSections) * 100;
-            totalCompletion += rate;
-            completionCount++;
-          }
-        });
+    allChapters.forEach((chap) => {
+      if (Array.isArray(chap.lessons)) {
+        totalLessons += chap.lessons.length;
       }
     });
 
-    const averageCompletion = completionCount > 0 
-      ? Math.round(totalCompletion / completionCount) 
-      : 0;
+    // =========================
+    // Progress statistics
+    // =========================
+
+    // Get normal users only
+    const normalUsers = await User.find({
+      role: { $ne: 'admin' },
+    }).select('_id');
+
+    const normalUserIds = normalUsers.map((u) => u._id);
+
+    // Total progress records
+    const totalProgress = await TheoryProgress.countDocuments({
+      user_id: { $in: normalUserIds },
+    });
+
+    // Users with progress
+    const usersWithProgress = await TheoryProgress.distinct('user_id', {
+      user_id: { $in: normalUserIds },
+    });
+
+    // Completed lessons
+    const completedProgress = await TheoryProgress.countDocuments({
+      user_id: { $in: normalUserIds },
+      completedAt: { $ne: null },
+    });
+
+    // Average completion
+    // Formula:
+    // total completed lessons / (users * total lessons)
+    let averageCompletion = 0;
+
+    if (totalLessons > 0 && normalUserIds.length > 0) {
+      const maxPossibleProgress = normalUserIds.length * totalLessons;
+
+      averageCompletion = Math.round(
+        (completedProgress / maxPossibleProgress) * 100
+      );
+    }
 
     return NextResponse.json({
       success: true,
@@ -103,26 +133,27 @@ export async function GET(request: NextRequest) {
         users: {
           total: totalUsers,
           active: activeUsers,
-          newThisMonth
+          newThisMonth,
         },
         chapters: {
           total: totalChapters,
           published: publishedChapters,
-          drafts: draftChapters
+          drafts: draftChapters,
         },
         lessons: {
-          total: totalLessons
+          total: totalLessons,
         },
         progress: {
           totalRecords: totalProgress,
+          completedRecords: completedProgress,
           averageCompletion,
-          activeUsers: usersWithProgress.length
-        }
-      }
+          activeUsers: usersWithProgress.length,
+        },
+      },
     });
-
   } catch (error) {
     console.error('Get stats error:', error);
+
     return NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }

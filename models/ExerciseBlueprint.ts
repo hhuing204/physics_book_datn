@@ -9,7 +9,7 @@ const ExerciseBlueprintSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    lessonTitle: {
+    chapterId: {
         type: String,
         required: true
     },

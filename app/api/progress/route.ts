@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import dbConnect from '@/lib/mongodb';
-import UserProgress, { IUserProgress } from '@/models/UserProgress';
+import TheoryProgress, { ITheoryProgress } from '@/models/TheoryProgress';
+import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-    
+
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.split(' ')[1];
 
@@ -17,16 +18,18 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify JWT token
     const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
     const decoded = jwt.verify(token, jwtSecret) as { userId: string; email: string };
 
-    // Get all progress for this user
-    const progressData = await UserProgress.find({ userId: decoded.userId });
+    const userObjectId = new mongoose.Types.ObjectId(decoded.userId);
 
-    // Convert to a format that's easy to use in frontend
-    const progressMap: { [key: number]: IUserProgress } = {};
-    progressData.forEach(progress => {
+    const progressData = await TheoryProgress.find({
+      user_id: userObjectId,
+    });
+
+    const progressMap: { [key: string]: ITheoryProgress } = {};
+
+    progressData.forEach((progress) => {
       progressMap[progress.lessonId] = progress;
     });
 
@@ -34,7 +37,6 @@ export async function GET(request: NextRequest) {
       message: 'Success',
       progress: progressMap,
     });
-
   } catch (error) {
     console.error('Get progress error:', error);
     return NextResponse.json(
@@ -47,7 +49,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
-    
+
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.split(' ')[1];
 
@@ -58,7 +60,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify JWT token
     const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
     const decoded = jwt.verify(token, jwtSecret) as { userId: string; email: string };
 
@@ -71,14 +72,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update or create progress
-    const updateData: any = {
-      userId: decoded.userId,
-      lessonId: parseInt(lessonId),
-      completed: completed || false,
+    const userObjectId = new mongoose.Types.ObjectId(decoded.userId);
+
+    const lessonObjectId = mongoose.Types.ObjectId.isValid(lessonId)
+      ? new mongoose.Types.ObjectId(lessonId)
+      : new mongoose.Types.ObjectId();
+
+    const updateData: Partial<ITheoryProgress> = {
+      user_id: userObjectId,
+      lesson_id: lessonObjectId,
+      lessonId: lessonId,
     };
 
-    if (completed) {
+    // map old "completed" behavior -> completedAt
+    if (completed === true) {
       updateData.completedAt = new Date();
     }
 
@@ -86,17 +93,22 @@ export async function POST(request: NextRequest) {
       updateData.timeSpent = timeSpent;
     }
 
-    const progress = await UserProgress.findOneAndUpdate(
-      { userId: decoded.userId, lessonId: parseInt(lessonId) },
+    const progress = await TheoryProgress.findOneAndUpdate(
+      {
+        user_id: userObjectId,
+        lessonId: lessonId,
+      },
       updateData,
-      { upsert: true, new: true }
+      {
+        upsert: true,
+        new: true,
+      }
     );
 
     return NextResponse.json({
       message: 'Cập nhật tiến độ thành công!',
       progress,
     });
-
   } catch (error) {
     console.error('Update progress error:', error);
     return NextResponse.json(

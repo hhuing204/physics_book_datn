@@ -156,6 +156,9 @@ export default function ExercisesPage() {
   const [showFinalResult, setShowFinalResult] = useState(false)
   const [startTime, setStartTime] = useState<Date>(new Date())
   const [currentLessonExercises, setCurrentLessonExercises] = useState<Exercise[]>([])
+  const [accessCodeInput, setAccessCodeInput] = useState('')
+  const [accessCodeError, setAccessCodeError] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -260,6 +263,45 @@ export default function ExercisesPage() {
     setShowFinalResult(false)
     setCurrentLessonExercises([])
     router.push(`/exercises/${chapterId}`)
+  }
+
+  const handleAccessCodeSubmit = () => {
+    const trimmedCode = accessCodeInput.trim().toUpperCase()
+    if (!trimmedCode) {
+      setAccessCodeError('Vui lòng nhập mã truy cập.')
+      return
+    }
+    setAccessCodeError('')
+    router.push(`/practice?accessCode=${encodeURIComponent(trimmedCode)}`)
+  }
+
+  const handleGenerateNewTest = async () => {
+    if (!selectedChapter || !selectedLesson) return
+    try {
+      setIsGenerating(true)
+      const response = await fetch('/api/practice-tests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          lessonId: selectedLesson,
+          chapterId: selectedChapter,
+          source: 'blueprint',
+          timeAlloted: 30,
+          numQuestions: 10,
+        }),
+      })
+      const data = await response.json()
+      if (data.success && data.test?.accessCode) {
+        router.push(`/practice?accessCode=${encodeURIComponent(data.test.accessCode)}`)
+      } else {
+        setAccessCodeError('Không thể tạo đề mới, vui lòng thử lại.')
+      }
+    } catch (error) {
+      console.error(error)
+      setAccessCodeError('Có lỗi khi tạo đề mới.')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const handleLessonSelect = (lessonId: string, lessonTitle: string) => {
@@ -407,6 +449,29 @@ export default function ExercisesPage() {
             <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Chọn chương học để bắt đầu luyện tập với hàng trăm câu hỏi có lời giải chi tiết
             </p>
+            <div className="mt-8 max-w-2xl mx-auto">
+              <div className="rounded-3xl border border-indigo-100 dark:border-indigo-800 bg-white dark:bg-gray-900 shadow-sm p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <input
+                    type="text"
+                    value={accessCodeInput}
+                    onChange={(e) => setAccessCodeInput(e.target.value)}
+                    placeholder="Nhập mã truy cập đề luyện tập"
+                    className="w-full rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-4 py-3 text-gray-900 dark:text-white placeholder-gray-500 focus:border-indigo-500 focus:ring-indigo-500/20 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAccessCodeSubmit}
+                    className="rounded-2xl bg-indigo-600 px-5 py-3 text-white font-semibold hover:bg-indigo-700 transition-colors"
+                  >
+                    Truy cập đề
+                  </button>
+                </div>
+                {accessCodeError && (
+                  <p className="mt-2 text-sm text-red-600">{accessCodeError}</p>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Chapters Grid */}
@@ -724,7 +789,7 @@ export default function ExercisesPage() {
         </button>
 
         {/* Header Info */}
-        <div className="mb-6 flex items-center justify-between flex-wrap gap-4">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between flex-wrap">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
               <Icons.FileQuestion className="w-6 h-6 text-indigo-600" />
@@ -734,11 +799,21 @@ export default function ExercisesPage() {
               Chương {selectedChapter} - Bài {selectedLesson}: {currentLesson?.title}
             </p>
           </div>
-          <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
-            <Icons.Crown className="w-4 h-4 text-yellow-500" />
-            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
-              {exercisesList.length} câu hỏi
-            </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2 px-4 py-2 bg-indigo-50 dark:bg-indigo-900/30 rounded-xl">
+              <Icons.Crown className="w-4 h-4 text-yellow-500" />
+              <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">
+                {exercisesList.length} câu hỏi
+              </span>
+            </div>
+            <button
+              onClick={handleGenerateNewTest}
+              disabled={isGenerating}
+              className="inline-flex items-center gap-2 rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Icons.RefreshCw className="w-4 h-4" />
+              {isGenerating ? 'Đang tạo đề...' : 'Làm đề khác'}
+            </button>
           </div>
         </div>
 

@@ -32,6 +32,8 @@ interface User {
   role: string
   isActive: boolean
   createdAt: string
+  lessonsCompleted: number
+  practiceTestsDone: number
 }
 
 export default function AdminDashboard() {
@@ -40,54 +42,54 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [recentUsers, setRecentUsers] = useState<User[]>([])
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([])
-    // Chọn/bỏ chọn 1 user
-    const handleSelectUser = (userId: string) => {
-      setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]);
-    };
+  // Chọn/bỏ chọn 1 user
+  const handleSelectUser = (userId: string) => {
+    setSelectedUserIds(prev => prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]);
+  };
 
-    // Chọn/bỏ chọn tất cả user trên trang hiện tại
-    const handleSelectAll = () => {
-      if (recentUsers.every(u => selectedUserIds.includes(u._id))) {
-        setSelectedUserIds(prev => prev.filter(id => !recentUsers.some(u => u._id === id)));
+  // Chọn/bỏ chọn tất cả user trên trang hiện tại
+  const handleSelectAll = () => {
+    if (recentUsers.every(u => selectedUserIds.includes(u._id))) {
+      setSelectedUserIds(prev => prev.filter(id => !recentUsers.some(u => u._id === id)));
+    } else {
+      setSelectedUserIds(prev => ([...prev, ...recentUsers.filter(u => !prev.includes(u._id)).map(u => u._id)]));
+    }
+  };
+
+  // Xóa hàng loạt user
+  const handleDeleteSelected = async () => {
+    if (!selectedUserIds.length) return;
+    if (!confirm('Bạn có chắc chắn muốn xóa các tài khoản đã chọn?')) return;
+    try {
+      const token = localStorage.getItem('auth_token');
+      // Xóa đồng thời tất cả user
+      const results = await Promise.all(selectedUserIds.map(userId =>
+        fetch(`/api/admin/users/${userId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        }).then(res => res.json())
+      ));
+      const allSuccess = results.every(r => r.success);
+      setSelectedUserIds([]);
+      if (allSuccess) {
+        alert('Đã xóa tất cả tài khoản đã chọn thành công!');
       } else {
-        setSelectedUserIds(prev => ([...prev, ...recentUsers.filter(u => !prev.includes(u._id)).map(u => u._id)]));
+        alert('Có một số tài khoản xóa thất bại!');
       }
-    };
-
-    // Xóa hàng loạt user
-    const handleDeleteSelected = async () => {
-      if (!selectedUserIds.length) return;
-      if (!confirm('Bạn có chắc chắn muốn xóa các tài khoản đã chọn?')) return;
-      try {
-        const token = localStorage.getItem('auth_token');
-        // Xóa đồng thời tất cả user
-        const results = await Promise.all(selectedUserIds.map(userId =>
-          fetch(`/api/admin/users/${userId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${token}` }
-          }).then(res => res.json())
-        ));
-        const allSuccess = results.every(r => r.success);
-        setSelectedUserIds([]);
-        if (allSuccess) {
-          alert('Đã xóa tất cả tài khoản đã chọn thành công!');
-        } else {
-          alert('Có một số tài khoản xóa thất bại!');
-        }
-        // Sau khi xóa, tính lại tổng số user và trang hợp lệ
-        const newTotal = totalUsers - selectedUserIds.length;
-        const newTotalPages = Math.max(1, Math.ceil(newTotal / pageSize));
-        // Nếu page hiện tại lớn hơn tổng số trang mới, chuyển về trang cuối cùng hợp lệ
-        if (page > newTotalPages) {
-          setPage(newTotalPages);
-        } else {
-          // Reload lại trang hiện tại để lấp đầy bảng bằng user phía sau
-          loadDashboardData(page);
-        }
-      } catch (err) {
-        alert('Có lỗi xảy ra khi xóa tài khoản');
+      // Sau khi xóa, tính lại tổng số user và trang hợp lệ
+      const newTotal = totalUsers - selectedUserIds.length;
+      const newTotalPages = Math.max(1, Math.ceil(newTotal / pageSize));
+      // Nếu page hiện tại lớn hơn tổng số trang mới, chuyển về trang cuối cùng hợp lệ
+      if (page > newTotalPages) {
+        setPage(newTotalPages);
+      } else {
+        // Reload lại trang hiện tại để lấp đầy bảng bằng user phía sau
+        loadDashboardData(page);
       }
-    };
+    } catch (err) {
+      alert('Có lỗi xảy ra khi xóa tài khoản');
+    }
+  };
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [pageSize] = useState(10)
@@ -117,6 +119,7 @@ export default function AdminDashboard() {
       const statsRes = await fetch('/api/admin/dashboard/stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       })
+
       const statsData = await statsRes.json()
       if (statsData.message === 'Unauthorized - Admin access required') {
         router.push('/')
@@ -133,7 +136,7 @@ export default function AdminDashboard() {
       if (usersData.success) {
         // Sau khi loadDashboardData xong và setRecentUsers(usersData.users):
         if (selectedUserIds.length > 0) {
-          setRecentUsers(usersData.users.filter(function(u: User) { return !selectedUserIds.includes(u._id); }));
+          setRecentUsers(usersData.users.filter(function (u: User) { return !selectedUserIds.includes(u._id); }));
         } else {
           setRecentUsers(usersData.users);
         }
@@ -304,21 +307,21 @@ export default function AdminDashboard() {
 
             {/* Total Lessons */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-                <div className="flex items-center">
-                    <div className="flex-shrink-0 bg-orange-100 dark:bg-orange-900 rounded-md p-3">
-                        <i className="fas fa-list-ol text-2xl text-orange-600 dark:text-orange-400"></i>
-                    </div>
-                    <div className="ml-5 w-0 flex-1">
-                        <dl>
-                        <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
-                            Tổng Bài Học
-                        </dt>
-                        <dd className="text-3xl font-semibold text-gray-900 dark:text-white">
-                            {stats.lessons.total}
-                        </dd>
-                    </dl>
-                    </div>
+              <div className="flex items-center">
+                <div className="flex-shrink-0 bg-orange-100 dark:bg-orange-900 rounded-md p-3">
+                  <i className="fas fa-list-ol text-2xl text-orange-600 dark:text-orange-400"></i>
                 </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                      Tổng Bài Học
+                    </dt>
+                    <dd className="text-3xl font-semibold text-gray-900 dark:text-white">
+                      {stats.lessons.total}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
             </div>
 
             {/* Average Progress */}
@@ -356,7 +359,7 @@ export default function AdminDashboard() {
             </h2>
           </div>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-center">
@@ -373,14 +376,20 @@ export default function AdminDashboard() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     EMAIL
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     VAI TRÒ
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    TIÉN ĐỘ LÝ THUYẾT
+                  </th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    QUÁ TRÌNH LUYỆN TẬP
+                  </th>
+                  <th className="pl-4 pr-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                     TRẠNG THÁI
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                    THAM GIA
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    NGÀY THAM GIA
                   </th>
                   <th className="px-6 py-3"></th>
                 </tr>
@@ -414,25 +423,29 @@ export default function AdminDashboard() {
                         {user.email}
                       </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.role === 'admin'
-                          ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
-                          : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
-                      }`}>
+                    <td className="pl-6 pr-4 py-4 whitespace-nowrap">
+                      <span className={`px-2 inline-flex text-xs text-right leading-5 font-semibold rounded-full ${user.role === 'admin'
+                        ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
+                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                        }`}>
                         {user.role}
                       </span>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                      {user.lessonsCompleted || 0} / {stats?.lessons.total}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400 text-center">
+                      {user.practiceTestsDone || 0}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        user.isActive
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                      }`}>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isActive
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
+                        }`}>
                         {user.isActive ? 'Hoạt động' : 'Không hoạt động'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-center text-gray-500 dark:text-gray-400">
                       {new Date(user.createdAt).toLocaleDateString('vi-VN')}
                     </td>
                     {user.role === 'user' && (

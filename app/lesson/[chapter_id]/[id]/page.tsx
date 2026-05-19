@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { MathFormula } from '@/components/Math'
-import SlidePresentation, { SlidePresentationRef } from '@/components/SlidePresentation'
+import SlidePresentationV1, { SlidePresentationRef as SlideRefV1 } from '@/components/SlidePresentationV1'
+import SlidePresentationV2, { SlidePresentationRef as SlideRefV2 } from '@/components/SlidePresentationV2'
 import { useProgress } from '@/hooks/useProgress'
 import Toast from '@/components/Toast'
 import axios from 'axios'
@@ -22,7 +23,8 @@ export default function LessonPage() {
   const [showCompletionToast, setShowCompletionToast] = useState(false)
   const [showSimulationModal, setShowSimulationModal] = useState(false)
   const [simulationType, setSimulationType] = useState<string>('')
-  const slideRef = useRef<SlidePresentationRef>(null)
+
+  const slideRef = useRef<SlideRefV1 | SlideRefV2>(null)
   const router = useRouter()
   const params = useParams()
 
@@ -32,6 +34,103 @@ export default function LessonPage() {
 
   const { updateProgress } = useProgress()
   const [isUpdating, setIsUpdating] = useState(false)
+
+  const getSubIdEmoji = (subId?: number | string) => {
+    if (!subId) return null
+
+    const map: Record<string, string> = {
+      "1": "1️⃣",
+      "2": "2️⃣",
+      "3": "3️⃣",
+      "4": "4️⃣",
+      "5": "5️⃣",
+      "6": "6️⃣",
+      "7": "7️⃣",
+      "8": "8️⃣",
+      "9": "9️⃣",
+      "10": "🔟"
+    }
+
+    return map[String(subId)] || "🔹"
+  }
+
+  const getSlideTypeIcon = (slide: Slide & { subId?: number | string }) => {
+    const { type, subId } = slide
+
+    // Keep special cases
+    if (type === 'intro') {
+      return '📚'
+    }
+
+    if (type === 'simulation') {
+      return '🎮'
+    }
+
+    if (type === 'relation') {
+      return '🔄'
+    }
+
+    if (type === 'summary') {
+      return '📋'
+    }
+
+    // All other types → use subId emoji
+    return getSubIdEmoji(subId) || '🔹'
+  }
+
+  const getSlideTypeTitle = (type: string) => {
+    switch (type) {
+      case 'intro':
+        return 'Mở đầu'
+      case 'foundation':
+        return 'Hình thành kiến thức'
+      case 'example':
+        return 'Ví dụ vận dụng'
+      case 'summary':
+        return 'Tổng kết'
+      case 'simulation':
+        return 'Mô phỏng'
+      case 'exploratory':
+        return 'Mở rộng kiến thức'
+      default:
+        return ''
+    }
+  }
+
+  const currentSlideType =
+    lesson?.slides?.[currentSlide]?.type ?? 'intro'
+
+  const renderSlidePresentation = () => {
+    if (!lesson) return null
+
+    if (parseInt(chapterId) == 1) {
+      return (
+        <SlidePresentationV1
+          ref={slideRef as React.Ref<SlideRefV1>}
+          slides={lesson.slides || []}
+          formulas={lesson.formulas}
+          images={lesson.images}
+          slideType={getSlideTypeTitle(currentSlideType)}
+          lessonId={parseInt(lessonId)}
+          onSlideChange={handleSlideChange}
+          onLessonComplete={handleLessonComplete}
+        />
+      )
+    } else {
+      return (
+        <SlidePresentationV2
+          ref={slideRef as React.Ref<SlideRefV2>}
+          slides={lesson.slides || []}
+          lessonTitle={`Bài ${lessonId}: ${lesson.title}`}
+          lessonId={parseInt(lessonId)}
+          onSlideChange={handleSlideChange}
+          onLessonComplete={handleLessonComplete}
+          onOpenSimulation={handleOpenSimulation}
+          chapterId={chapterId}
+        />
+      )
+    }
+  }
 
   const handleOpenSimulation = (type: string) => {
     setSimulationType(type)
@@ -94,7 +193,7 @@ export default function LessonPage() {
 
     setIsUpdating(true)
     try {
-      await updateProgress?.(parseInt(lessonId), true)
+      await updateProgress?.(lessonId, true)
 
       // Tìm bài tiếp theo trong cùng chapter
       const currentIndex = chapter.lessons.findIndex(l => l.id === lessonId)
@@ -141,17 +240,6 @@ export default function LessonPage() {
     }, 2000)
   }
 
-  const getSlideTypeIcon = (type: string) => {
-    switch (type) {
-      case 'intro': return '📚'
-      case 'defination': return '💡'
-      case 'example': return '🔍'
-      case 'summary': return '📋'
-      case 'simulation': return '🎮'
-      case 'relation': return '🔄'
-      default: return '📄'
-    }
-  }
 
   const getChapterColor = (chapterId: string) => {
     const colors: Record<string, string> = {
@@ -237,7 +325,7 @@ export default function LessonPage() {
                     }`}
                 >
                   <div className="flex items-center space-x-3">
-                    <span className="text-sm">{getSlideTypeIcon(slide.type)}</span>
+                    <span className="text-sm">{getSlideTypeIcon(slide)}</span>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium truncate">{slide.title}</div>
                       <div className="text-xs opacity-75 capitalize">{slide.type}</div>
@@ -300,16 +388,7 @@ export default function LessonPage() {
 
           {/* Slide Presentation */}
           <div className="h-[calc(100vh-10rem)]">
-            <SlidePresentation
-              ref={slideRef}
-              slides={lesson.slides || []}
-              lessonTitle={`Bài ${lessonId}: ${lesson.title}`}
-              lessonId={parseInt(lessonId)}
-              onSlideChange={handleSlideChange}
-              onLessonComplete={handleLessonComplete}
-              onOpenSimulation={handleOpenSimulation}
-              chapterId={chapterId}
-            />
+            {renderSlidePresentation()}
           </div>
 
           {/* Navigation buttons */}

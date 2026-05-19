@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
         const {
             id,
             lessonId,
-            lessonTitle,
+            chapterId,
             type,
             questionTemplate,
             correctAnswerTemplate,
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
             variables
         } = body
 
-        if (id == null || !questionTemplate || !explanationTemplate || !category) {
+        if (id == null || !lessonId || !chapterId || !questionTemplate || !explanationTemplate || !category) {
             return NextResponse.json(
                 { success: false, message: 'Missing required fields' },
                 { status: 400 }
@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         const newBlueprint = new ExerciseBlueprint({
             id,
             lessonId,
-            lessonTitle,
+            chapterId,
             type,
             questionTemplate,
             correctAnswerTemplate,
@@ -131,7 +131,7 @@ export async function PUT(request: NextRequest) {
         const {
             id,
             lessonId,
-            lessonTitle,
+            chapterId,
             type,
             questionTemplate,
             correctAnswerTemplate,
@@ -141,7 +141,7 @@ export async function PUT(request: NextRequest) {
             variables
         } = body
 
-        if (id == null || !questionTemplate || !explanationTemplate || !category) {
+        if (id == null || !lessonId || !chapterId || !questionTemplate || !explanationTemplate || !category) {
             return NextResponse.json(
                 { success: false, message: 'Missing required fields' },
                 { status: 400 }
@@ -154,7 +154,7 @@ export async function PUT(request: NextRequest) {
             { id },
             {
                 lessonId,
-                lessonTitle,
+                chapterId,
                 type,
                 questionTemplate,
                 correctAnswerTemplate,
