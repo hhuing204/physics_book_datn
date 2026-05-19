@@ -106,14 +106,13 @@ export default function ChapterLessonsPage() {
     }
 
     // Chuyển đổi lesson ids sang number để dùng với useProgress
-    const lessonIds: number[] = chapter.lessons?.map(l => parseInt(l.id)) || []
+    const lessonIds: string[] = chapter.lessons?.map(l => l.id) || []
 
     // Tính completion rate an toàn
     const completedCount = lessonIds.filter(id => isLessonCompleted ? isLessonCompleted(id) : false).length
     const completionRate = lessonIds.length > 0 ? Math.round((completedCount / lessonIds.length) * 100) : 0
-    const chapterSlug = chapter.chapterId || chapter.id || ''
-    const chapterNumber = chapter.chapterId || chapter.id?.replace(/^chapter-/, '') || chapterSlug
-
+    const chapterSlug = chapter.chapterId || ''
+    const chapterNumber = chapter.chapterId?.replace(/^chapter-/, '') || chapterSlug
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
             {/* Main Content - Đã xóa header, thêm nút back trong content */}
@@ -185,7 +184,7 @@ export default function ChapterLessonsPage() {
                                             <div className={`w-12 h-12 bg-gradient-to-r ${getChapterColor(chapterNumber)} rounded-xl flex items-center justify-center text-white font-bold text-lg`}>
                                                 {lesson.id}
                                             </div>
-                                            {isLessonCompleted && isLessonCompleted(parseInt(lesson.id)) && (
+                                            {isLessonCompleted && isLessonCompleted(lesson.id) && (
                                                 <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
                                                     <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

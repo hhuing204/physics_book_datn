@@ -4,6 +4,19 @@ import PracticeTest from '@/models/PracticeTest'
 import PracticeProgress from '@/models/PracticeProgress'
 import { verifyToken } from '@/lib/auth'
 
+interface IPracticeTest {
+    _id: string
+    accessCode: string
+    timeAlloted: number
+}
+
+interface IPracticeProgress {
+    _id: string
+    status: string
+    score: number
+    answers: any[]
+}
+
 export async function GET(request: NextRequest) {
     try {
         await dbConnect()
@@ -29,7 +42,8 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: false, message: 'Access code is required' }, { status: 400 })
         }
 
-        const practiceTest = await PracticeTest.findOne({ accessCode }).lean()
+        const practiceTest = await PracticeTest.findOne({ accessCode })
+            .lean<IPracticeTest | null>()
         if (!practiceTest) {
             return NextResponse.json({ success: false, message: 'Practice test not found' }, { status: 404 })
         }
@@ -64,7 +78,8 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: 'Access code is required' }, { status: 400 })
         }
 
-        const practiceTest = await PracticeTest.findOne({ accessCode }).lean()
+        const practiceTest = await PracticeTest.findOne({ accessCode })
+            .lean<IPracticeTest | null>()
         if (!practiceTest) {
             return NextResponse.json({ success: false, message: 'Practice test not found' }, { status: 404 })
         }
@@ -74,7 +89,7 @@ export async function POST(request: NextRequest) {
             practiceTestId: practiceTest._id,
         })
             .sort({ createdAt: -1 })
-            .lean()
+            .lean<IPracticeProgress | null>()
 
         if (existing && existing.status === 'in-progress') {
             return NextResponse.json({ success: true, progress: existing, practiceTest })
@@ -115,7 +130,8 @@ export async function PUT(request: NextRequest) {
             return NextResponse.json({ success: false, message: 'Access code is required' }, { status: 400 })
         }
 
-        const practiceTest = await PracticeTest.findOne({ accessCode }).lean()
+        const practiceTest = await PracticeTest.findOne({ accessCode })
+            .lean<IPracticeTest | null>()
         if (!practiceTest) {
             return NextResponse.json({ success: false, message: 'Practice test not found' }, { status: 404 })
         }

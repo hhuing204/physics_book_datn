@@ -40,6 +40,4 @@ const PracticeTestSchema = new mongoose.Schema(
     }
 )
 
-PracticeTestSchema.index({ accessCode: 1 }, { unique: true })
-
 export default mongoose.models.PracticeTest || mongoose.model('PracticeTest', PracticeTestSchema)

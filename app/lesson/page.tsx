@@ -104,11 +104,10 @@ export default function LessonListPage() {
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {chapters.map((chapter) => {
                             const chapterSlug =
-                                chapter.chapterId || chapter.id || chapter._id.toString();
+                                chapter.chapterId || chapter._id.toString();
 
                             const chapterNumber =
-                                chapter.chapterId ||
-                                chapter.id?.replace(/^chapter-/, "") ||
+                                chapter.chapterId?.replace(/^chapter-/, "") ||
                                 chapterSlug;
 
                             return (
