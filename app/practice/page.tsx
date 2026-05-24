@@ -845,11 +845,16 @@ export default function PracticePage() {
             <div className="mb-6 p-4 bg-gradient-to-r from-indigo-100 to-indigo-50 dark:from-indigo-900/30 dark:to-indigo-800/20 rounded-2xl border border-indigo-200 dark:border-indigo-700">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Mã đề thi</p>
+                  <p className="text-base text-indigo-600 dark:text-indigo-400 mb-1">Mã đề thi</p>
                   <p className="text-3xl font-bold text-indigo-900 dark:text-indigo-100 font-mono tracking-widest">{practiceProgress.accessCode}</p>
+                  {practiceTest?.timeAlloted && (
+                    <p className="text-lg text-indigo-600 dark:text-indigo-300 mt-2">
+                      Thời gian quy định: {practiceTest.timeAlloted} phút
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-indigo-600 dark:text-indigo-400 mb-1">Thời gian đã làm</p>
+                  <p className="text-base text-indigo-600 dark:text-indigo-400 mb-1">Thời gian đã làm</p>
                   <p className="text-2xl font-bold text-indigo-900 dark:text-indigo-100 font-mono">{Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}</p>
                 </div>
               </div>
@@ -1026,9 +1031,8 @@ export default function PracticePage() {
           </div>
 
           {/* Score Display */}
-          <div className="mt-6 text-center text-gray-600 dark:text-gray-400">
+          <div className="text-lg mt-6 text-center text-gray-600 dark:text-gray-400">
             <p>Điểm hiện tại: <span className="font-bold text-blue-600 dark:text-blue-400">{score}/{currentExercise + (showResult ? 1 : 0)}</span></p>
-            <p className="text-xs mt-2">Thời gian: {Math.floor(elapsedSeconds / 60)}:{String(elapsedSeconds % 60).padStart(2, '0')}</p>
           </div>
         </div>
       </main>

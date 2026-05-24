@@ -199,15 +199,39 @@ export async function POST(request: NextRequest) {
             }
         } else {
             const query: any = {}
-            if (lessonId) query.lessonId = lessonId
-            else if (chapterId && chapterId !== 'all') query.chapterId = chapterId
-            const storedExercises = await Exercise.find(query).lean()
-            if (!storedExercises.length) {
-                return NextResponse.json({ success: false, message: 'Không tìm thấy bài tập đã lưu để tạo đề' }, { status: 404 })
+
+            // lesson / chapter filter (keep existing logic)
+            if (lessonId) {
+                query.lessonId = lessonId
+            } else if (chapterId && chapterId !== 'all') {
+                query.chapterId = chapterId
             }
-            const shuffled = [...storedExercises].sort(() => Math.random() - 0.5)
-            for (let i = 0; i < Math.min(numQuestions, shuffled.length); i += 1) {
-                const exercise = shuffled[i]
+
+            const difficulty = body.difficulty
+            if (difficulty && difficulty !== 'all') {
+                query.difficulty = difficulty
+            }
+
+            console.log('STORED TEST QUERY:', query)
+            console.log('numQuestions:', numQuestions)
+
+            const storedExercises = await Exercise.find(query).lean()
+
+            if (!storedExercises.length) {
+                return NextResponse.json(
+                    { success: false, message: 'Không tìm thấy bài tập đã lưu để tạo đề' },
+                    { status: 404 }
+                )
+            }
+
+            // shuffle
+            const shuffled = storedExercises.sort(() => Math.random() - 0.5)
+
+            // limit by FE setting
+            const selected = shuffled.slice(0, numQuestions)
+
+            for (let i = 0; i < selected.length; i += 1) {
+                const exercise = selected[i]
                 exercises.push({
                     id: exercise.id,
                     chapterId: exercise.chapterId,

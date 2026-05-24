@@ -141,6 +141,15 @@ const lessonsByChapter: Record<string, { id: string; title: string }[]> = {
   ],
 }
 
+const timeOptions = [15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180]
+
+const difficultyOptions = [
+  { label: 'Tất cả', value: 'all' },
+  { label: 'Cơ bản', value: 'basic' },
+  { label: 'Thông hiểu', value: 'intermediate' },
+  { label: 'Vận dụng cao', value: 'advanced' },
+]
+
 export default function ExercisesPage() {
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -159,6 +168,9 @@ export default function ExercisesPage() {
   const [accessCodeInput, setAccessCodeInput] = useState('')
   const [accessCodeError, setAccessCodeError] = useState('')
   const [isGenerating, setIsGenerating] = useState(false)
+  const [selectedTime, setSelectedTime] = useState(30)
+  const [selectedDifficulty, setSelectedDifficulty] = useState('intermediate')
+  const [selectedQuestionCount, setSelectedQuestionCount] = useState(10)
 
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -249,8 +261,44 @@ export default function ExercisesPage() {
     setCurrentLessonExercises([])
   }
 
-  const handlePracticeOverall = () => {
-    router.push('/practice?chapterId=all')
+  const handlePracticeOverall = async ({
+    timeAlloted,
+    difficulty,
+    questionCount,
+  }: {
+    timeAlloted: number
+    difficulty: string
+    questionCount: number
+  }) => {
+    try {
+      const res = await fetch('/api/practice-tests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          timeAlloted,
+          numQuestions: questionCount,
+          chapterId: 'all',
+          difficulty,
+          source: 'stored',
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!data.success) {
+        console.error(data.message)
+        return
+      }
+
+      const test = data.test
+
+      // IMPORTANT: your page already supports this path
+      router.push(`/practice?accessCode=${test.accessCode}`)
+    } catch (error) {
+      console.error('Failed to create practice test:', error)
+    }
   }
 
   const handleChapterSelect = (chapterId: string) => {
@@ -536,29 +584,188 @@ export default function ExercisesPage() {
           <div className="mt-16 text-center">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl blur-2xl opacity-30" />
+
               <div className="relative bg-gradient-to-r from-indigo-600 to-purple-600 rounded-3xl p-8 text-white overflow-hidden">
                 <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
                 <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 rounded-full translate-y-1/2 -translate-x-1/2" />
 
-                <div className="relative flex flex-col md:flex-row items-center justify-between gap-6">
-                  <div className="text-left">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Icons.Trophy className="w-6 h-6 text-yellow-300" />
-                      <span className="text-yellow-300 font-semibold">Thử thách</span>
+                <div className="relative flex flex-col gap-8">
+
+                  {/* Header */}
+                  <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                    <div className="text-left">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Icons.Trophy className="w-6 h-6 text-yellow-300" />
+                        <span className="text-yellow-300 font-semibold">
+                          Thử thách
+                        </span>
+                      </div>
+
+                      <h3 className="text-2xl md:text-3xl font-bold mb-2">
+                        Luyện tập tổng hợp
+                      </h3>
+
+                      <p className="text-indigo-100 max-w-md">
+                        Kiểm tra kiến thức tổng hợp với câu hỏi từ tất cả {chapters.length} chương
+                      </p>
                     </div>
-                    <h3 className="text-2xl md:text-3xl font-bold mb-2">Luyện tập tổng hợp</h3>
-                    <p className="text-indigo-100 max-w-md">
-                      Kiểm tra kiến thức tổng hợp với câu hỏi từ tất cả {chapters.length} chương
-                    </p>
+
+                    <button
+                      onClick={() =>
+                        handlePracticeOverall({
+                          timeAlloted: selectedTime,
+                          difficulty: selectedDifficulty,
+                          questionCount: selectedQuestionCount,
+                        })
+                      }
+                      className="px-8 py-3 bg-white text-indigo-600 rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
+                    >
+                      <Icons.Swords className="w-5 h-5" />
+                      <span>Bắt đầu thử thách</span>
+                      <Icons.ChevronRight className="w-4 h-4" />
+                    </button>
                   </div>
-                  <button
-                    onClick={handlePracticeOverall}
-                    className="px-8 py-3 bg-white text-indigo-600 rounded-xl font-semibold hover:shadow-xl transform hover:scale-105 transition-all flex items-center gap-2"
-                  >
-                    <Icons.Swords className="w-5 h-5" />
-                    <span>Bắt đầu thử thách</span>
-                    <Icons.ChevronRight className="w-4 h-4" />
-                  </button>
+
+                  {/* CONTROLS ROW */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                    {/* Time Selection (CYCLIC) */}
+                    <div className="bg-white/10 rounded-2xl p-5 backdrop-blur-sm">
+                      <label className="block text-sm font-semibold mb-3 text-indigo-100">
+                        Thời gian làm bài
+                      </label>
+
+                      <div className="flex items-center justify-between gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentIndex = timeOptions.indexOf(selectedTime)
+                            const newIndex =
+                              currentIndex <= 0 ? timeOptions.length - 1 : currentIndex - 1
+                            setSelectedTime(timeOptions[newIndex])
+                          }}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+                        >
+                          <Icons.ChevronLeft className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex-1 text-center">
+                          <div className="text-2xl font-bold">
+                            {selectedTime >= 60
+                              ? `${Math.floor(selectedTime / 60)} giờ${selectedTime % 60 !== 0 ? ` ${selectedTime % 60} phút` : ''
+                              }`
+                              : `${selectedTime} phút`}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentIndex = timeOptions.indexOf(selectedTime)
+                            const newIndex =
+                              currentIndex >= timeOptions.length - 1 ? 0 : currentIndex + 1
+                            setSelectedTime(timeOptions[newIndex])
+                          }}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+                        >
+                          <Icons.ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Difficulty Selection (CYCLIC) */}
+                    <div className="bg-white/10 rounded-2xl p-5 backdrop-blur-sm">
+                      <label className="block text-sm font-semibold mb-3 text-indigo-100">
+                        Độ khó
+                      </label>
+
+                      <div className="flex items-center justify-between gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentIndex = difficultyOptions.findIndex(
+                              (d) => d.value === selectedDifficulty
+                            )
+                            const newIndex =
+                              currentIndex <= 0
+                                ? difficultyOptions.length - 1
+                                : currentIndex - 1
+
+                            setSelectedDifficulty(difficultyOptions[newIndex].value)
+                          }}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+                        >
+                          <Icons.ChevronLeft className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex-1 text-center">
+                          <div className="text-2xl font-bold">
+                            {
+                              difficultyOptions.find(
+                                (d) => d.value === selectedDifficulty
+                              )?.label
+                            }
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const currentIndex = difficultyOptions.findIndex(
+                              (d) => d.value === selectedDifficulty
+                            )
+                            const newIndex =
+                              currentIndex >= difficultyOptions.length - 1 ? 0 : currentIndex + 1
+
+                            setSelectedDifficulty(difficultyOptions[newIndex].value)
+                          }}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+                        >
+                          <Icons.ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Question Count (CYCLIC 10–100 step 5) */}
+                    <div className="bg-white/10 rounded-2xl p-5 backdrop-blur-sm">
+                      <label className="block text-sm font-semibold mb-3 text-indigo-100">
+                        Số lượng câu hỏi
+                      </label>
+
+                      <div className="flex items-center justify-between gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedQuestionCount((prev) =>
+                              prev <= 10 ? 100 : prev - 5
+                            )
+                          }}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+                        >
+                          <Icons.ChevronLeft className="w-5 h-5" />
+                        </button>
+
+                        <div className="flex-1 text-center">
+                          <div className="text-2xl font-bold">
+                            {selectedQuestionCount}
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedQuestionCount((prev) =>
+                              prev >= 100 ? 10 : prev + 5
+                            )
+                          }}
+                          className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all"
+                        >
+                          <Icons.ChevronRight className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
                 </div>
               </div>
             </div>
