@@ -7,7 +7,7 @@ import User from '@/models/User';
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
-    
+
     const { email, password } = await request.json();
 
     // Validate input
@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
     const token = jwt.sign(
-      { 
+      {
         userId: user._id,
-        email: user.email 
+        email: user.email
       },
       jwtSecret,
       { expiresIn: '7d' }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
       name: user.name,
       email: user.email,
       avatar: user.avatar,
-      role: user.role || 'user',
+      role: user.role || 'Learner',
       createdAt: user.createdAt,
     };
 

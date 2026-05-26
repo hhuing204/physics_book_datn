@@ -6,7 +6,7 @@ import { IUser } from '@/models/User';
 interface AuthContextType {
   user: IUser | null;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
-  register: (name: string, email: string, password: string) => Promise<{ success: boolean; message: string }>;
+  register: (name: string, email: string, password: string, role?: string) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   loading: boolean;
 }
@@ -76,10 +76,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (response.ok) {
         localStorage.setItem('auth_token', data.token);
         setUser(data.user);
-        return { 
-          success: true, 
+        return {
+          success: true,
           message: 'Đăng nhập thành công!',
-          redirectTo: data.redirectTo 
+          redirectTo: data.redirectTo
         };
       } else {
         return { success: false, message: data.message || 'Đăng nhập thất bại!' };
@@ -89,14 +89,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string): Promise<{ success: boolean; message: string }> => {
+  const register = async (name: string, email: string, password: string, role: string = 'Learner'): Promise<{ success: boolean; message: string }> => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name, email, password, role }),
       });
 
       const data = await response.json();

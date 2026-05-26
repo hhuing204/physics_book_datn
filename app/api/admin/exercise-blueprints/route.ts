@@ -5,8 +5,8 @@ import jwt from 'jsonwebtoken'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
 
-// Verify admin token
-async function verifyAdmin(request: NextRequest) {
+// Verify token and ensure the user is a Teacher
+async function verifyTeacher(request: NextRequest) {
     const authHeader = request.headers.get('authorization')
     if (!authHeader?.startsWith('Bearer ')) {
         return null
@@ -14,11 +14,20 @@ async function verifyAdmin(request: NextRequest) {
 
     const token = authHeader.substring(7)
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string; role: string }
-        if (decoded.role !== 'admin') {
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email?: string }
+        if (!decoded || !decoded.userId) return null
+
+        // fetch user from DB
+        await dbConnect()
+        const User = (await import('@/models/User')).default
+        const user = await User.findById(decoded.userId)
+        if (!user) return null
+
+        if ((user.role || '').toString().toLowerCase() !== 'teacher') {
             return null
         }
-        return decoded
+
+        return user
     } catch (error) {
         return null
     }
@@ -27,6 +36,11 @@ async function verifyAdmin(request: NextRequest) {
 // GET - Fetch all exercise blueprints
 export async function GET(request: NextRequest) {
     try {
+
+        const teacher = await verifyTeacher(request)
+        if (!teacher) {
+            return NextResponse.json({ message: 'Unauthorized - Teacher access required' }, { status: 403 })
+        }
 
         await dbConnect()
 
@@ -70,6 +84,11 @@ export async function GET(request: NextRequest) {
 // POST - Add new exercise blueprint
 export async function POST(request: NextRequest) {
     try {
+
+        const teacher = await verifyTeacher(request)
+        if (!teacher) {
+            return NextResponse.json({ message: 'Unauthorized - Teacher access required' }, { status: 403 })
+        }
 
         const body = await request.json()
         const {
@@ -126,6 +145,11 @@ export async function POST(request: NextRequest) {
 // PUT - Update exercise blueprint
 export async function PUT(request: NextRequest) {
     try {
+
+        const teacher = await verifyTeacher(request)
+        if (!teacher) {
+            return NextResponse.json({ message: 'Unauthorized - Teacher access required' }, { status: 403 })
+        }
 
         const body = await request.json()
         const {
@@ -190,6 +214,11 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete exercise blueprint
 export async function DELETE(request: NextRequest) {
     try {
+
+        const teacher = await verifyTeacher(request)
+        if (!teacher) {
+            return NextResponse.json({ message: 'Unauthorized - Teacher access required' }, { status: 403 })
+        }
 
         const { searchParams } = new URL(request.url)
         const idParam = searchParams.get('id')

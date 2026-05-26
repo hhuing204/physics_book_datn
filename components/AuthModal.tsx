@@ -16,10 +16,11 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'Learner',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  
+
   const { login, register } = useAuth();
 
   if (!isOpen) return null;
@@ -75,11 +76,17 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       if (isLoginMode) {
         result = await login(formData.email, formData.password);
       } else {
-        result = await register(formData.name, formData.email, formData.password);
+        result = await register(formData.name, formData.email, formData.password, formData.role);
       }
 
       if (result.success) {
-        setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+        setFormData({
+          name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          role: 'Learner',
+        });
         onClose();
         onSuccess?.();
       } else {
@@ -95,7 +102,13 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
   const switchMode = () => {
     setIsLoginMode(!isLoginMode);
     setError('');
-    setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+    setFormData({
+      name: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      role: 'Learner',
+    });
   };
 
   return (
@@ -117,8 +130,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
             </button>
           </div>
           <p className="text-blue-100 text-sm mt-1">
-            {isLoginMode 
-              ? 'Chào mừng bạn quay lại!' 
+            {isLoginMode
+              ? 'Chào mừng bạn quay lại!'
               : 'Tạo tài khoản để bắt đầu học tập'
             }
           </p>
@@ -133,20 +146,44 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           )}
 
           {!isLoginMode && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Họ và tên
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                placeholder="Nhập họ và tên"
-                required={!isLoginMode}
-              />
-            </div>
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Vai trò
+                </label>
+
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      role: e.target.value,
+                    }))
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                >
+                  <option value="Learner">Học sinh</option>
+                  <option value="Teacher">Giáo viên</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Họ và tên
+                </label>
+
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="Nhập họ và tên"
+                  required={!isLoginMode}
+                />
+              </div>
+            </>
           )}
 
           <div>
@@ -199,11 +236,10 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           <button
             type="submit"
             disabled={loading}
-            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${
-              loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
-            }`}
+            className={`w-full py-3 px-4 rounded-lg font-medium transition-colors ${loading
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white'
+              }`}
           >
             {loading ? (
               <div className="flex items-center justify-center">
@@ -224,8 +260,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
               onClick={switchMode}
               className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
             >
-              {isLoginMode 
-                ? 'Chưa có tài khoản? Đăng ký ngay' 
+              {isLoginMode
+                ? 'Chưa có tài khoản? Đăng ký ngay'
                 : 'Đã có tài khoản? Đăng nhập'
               }
             </button>

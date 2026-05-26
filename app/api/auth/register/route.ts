@@ -7,8 +7,8 @@ import User from '@/models/User';
 export async function POST(request: NextRequest) {
   try {
     await dbConnect();
-    
-    const { name, email, password } = await request.json();
+
+    const { name, email, password, role } = await request.json();
 
     // Validate input
     if (!name || !email || !password) {
@@ -38,12 +38,16 @@ export async function POST(request: NextRequest) {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
+    // Normalize role: accept 'Teacher' or default to 'Learner'
+    const requestedRole = typeof role === 'string' ? role.trim() : '';
+    const normalizedRole = requestedRole.toLowerCase() === 'teacher' ? 'Teacher' : 'Learner';
+
     // Create user
     const newUser = new User({
       name: name.trim(),
       email: email.toLowerCase().trim(),
       password: hashedPassword,
-      role: 'user',
+      role: normalizedRole,
       isActive: true
     });
 
@@ -52,9 +56,9 @@ export async function POST(request: NextRequest) {
     // Generate JWT token
     const jwtSecret = process.env.JWT_SECRET || 'fallback_secret';
     const token = jwt.sign(
-      { 
+      {
         userId: newUser._id,
-        email: newUser.email 
+        email: newUser.email
       },
       jwtSecret,
       { expiresIn: '7d' }
@@ -66,7 +70,7 @@ export async function POST(request: NextRequest) {
       name: newUser.name,
       email: newUser.email,
       avatar: newUser.avatar,
-      role: newUser.role || 'user',
+      role: newUser.role || 'Learner',
       createdAt: newUser.createdAt,
     };
 

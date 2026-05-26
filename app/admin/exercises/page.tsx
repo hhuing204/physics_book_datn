@@ -98,7 +98,7 @@ export default function AdminExerciseBlueprints() {
 
     fetchLessons()
 
-    if (user && user.role !== 'admin') {
+    if (user && (user.role || '').toLowerCase() !== 'teacher') {
       router.push('/')
       return
     }
@@ -266,7 +266,7 @@ export default function AdminExerciseBlueprints() {
 
   const handleFilterChange = () => setPage(1)
 
-  if (!user || user.role !== 'admin') {
+  if (!user || (user.role || '').toLowerCase() !== 'teacher') {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p className="text-gray-600 dark:text-gray-400">Truy cập bị từ chối</p>

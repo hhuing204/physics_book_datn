@@ -6,7 +6,7 @@ export interface IUser {
   password: string;
   name: string;
   avatar?: string;
-  role?: 'user' | 'admin';
+  role?: string;
   isActive?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
@@ -37,8 +37,7 @@ const UserSchema = new mongoose.Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      default: 'Learner',
     },
     isActive: {
       type: Boolean,
