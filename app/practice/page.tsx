@@ -1085,10 +1085,10 @@ export default function PracticePage() {
               </div>
               <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/20 dark:to-purple-800/20 rounded-xl p-6">
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                  Điểm/giờ
+                  Điểm / Phút
                 </div>
                 <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                  {Math.round((score / timeTaken) * 60) || 0}
+                  {Math.round((score / timeTaken) || 0)}
                 </div>
               </div>
             </div>
