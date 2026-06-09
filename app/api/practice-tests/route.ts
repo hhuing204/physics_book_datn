@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongodb'
-import Exercise from '@/models/Exercise'
 import ExerciseBlueprint from '@/models/ExerciseBlueprint'
 import PracticeTest from '@/models/PracticeTest'
 
@@ -20,10 +19,51 @@ const generateAccessCode = () => {
     return code
 }
 
-const buildTemplate = (template: string, vars: Record<string, any>) => {
-    return template.replace(/\{(\w+)\}/g, (_, name) => {
-        return vars[name] != null ? String(vars[name]) : ''
+const normalizeVariableName = (name: string) => {
+    return name.trim().replace(/[₀₁₂₃₄₅₆₇₈₉]/g, (digit) => String('₀₁₂₃₄₅₆₇₈₉'.indexOf(digit)))
+}
+
+const buildTemplate = (template: string | string[] | undefined, vars: Record<string, any>): string => {
+    if (Array.isArray(template)) {
+        return template.map((item) => buildTemplate(item, vars)).join(', ')
+    }
+
+    if (typeof template !== 'string') {
+        return String(template ?? '')
+    }
+
+    return template.replace(/\{([^{}]+)\}/g, (_, name) => {
+        const trimmedName = name.trim()
+        const directValue = vars[trimmedName]
+        if (directValue != null) {
+            return String(directValue)
+        }
+
+        const normalizedName = normalizeVariableName(trimmedName)
+        const fallbackValue = normalizedName !== trimmedName ? vars[normalizedName] : undefined
+        return fallbackValue != null ? String(fallbackValue) : ''
     })
+}
+
+const parseTheoreticalAnswers = (answerTemplate: string) => {
+    const matches = answerTemplate.match(/\{[^{}]+\}/g)
+    if (!matches) {
+        return []
+    }
+
+    return matches.map((match) => match.replace(/[{}]/g, '').trim())
+}
+
+const getVariableEntries = (variables: any) => {
+    if (!variables || typeof variables !== 'object') {
+        return []
+    }
+
+    if (variables instanceof Map) {
+        return Array.from(variables.entries())
+    }
+
+    return Object.entries(variables)
 }
 
 const evaluateExpression = (expression: string) => {
@@ -39,50 +79,158 @@ const evaluateExpression = (expression: string) => {
     }
 }
 
+const normalizePreviewExercise = (exercise: any, index: number) => {
+    return {
+        id: exercise.id ?? Date.now() + index,
+        chapterId: exercise.chapterId || '',
+        lessonId: exercise.lessonId || '',
+        lessonTitle: exercise.lessonTitle || '',
+        type: exercise.type === 'fill-in' ? 'fill-in' : 'multiple-choice',
+        question: exercise.question ?? '',
+        options: Array.isArray(exercise.options) ? exercise.options : undefined,
+        correctAnswer: String(exercise.correctAnswer ?? ''),
+        explanation: exercise.explanation ?? '',
+        difficulty: exercise.difficulty || 'basic',
+        category: exercise.category || 'Luyện tập',
+    }
+}
+
+const resolveTheoreticalOptionValues = (blueprint: any, answerTokens: string[]) => {
+    const optionGroups = getVariableEntries(blueprint.variables).filter(([, value]) => Array.isArray(value))
+    if (!optionGroups.length) {
+        return answerTokens.map((token) => token.trim()).filter(Boolean)
+    }
+
+    return answerTokens.map((token) => {
+        const trimmedToken = token.trim()
+        if (!trimmedToken) {
+            return ''
+        }
+
+        for (const [, optionGroup] of optionGroups) {
+            const matchedOption = Array.isArray(optionGroup)
+                ? optionGroup.find((option: any) => option?.name === trimmedToken)
+                : null
+
+            if (matchedOption && typeof matchedOption.value === 'string' && matchedOption.value.trim()) {
+                return matchedOption.value.trim()
+            }
+        }
+
+        return trimmedToken
+    }).filter(Boolean)
+}
+
+const getTheoreticalOptionValues = (blueprint: any) => {
+    const optionGroups = getVariableEntries(blueprint.variables).filter(([, value]) => Array.isArray(value))
+    if (!optionGroups.length) {
+        return undefined
+    }
+
+    const optionValues = optionGroups.flatMap(([, optionGroup]) => {
+        if (!Array.isArray(optionGroup)) {
+            return []
+        }
+
+        return optionGroup
+            .map((option: any) => (typeof option?.value === 'string' ? option.value.trim() : ''))
+            .filter(Boolean)
+    })
+
+    return optionValues.length ? optionValues : undefined
+}
+
+const createCalculationOptions = (correctAnswer: string | number) => {
+    const numericAnswer = typeof correctAnswer === 'number' ? correctAnswer : Number(correctAnswer)
+    if (!Number.isFinite(numericAnswer)) {
+        return undefined
+    }
+
+    const decimals = Number.isInteger(numericAnswer) ? 0 : 2
+    const options = [String(numericAnswer)]
+
+    while (options.length < 4) {
+        const multiplier = 0.9 + Math.random() * 0.2
+        const distractorValue = Number((numericAnswer * multiplier).toFixed(decimals))
+        const distractorText = String(distractorValue)
+
+        if (distractorText !== String(numericAnswer) && !options.includes(distractorText)) {
+            options.push(distractorText)
+        }
+    }
+
+    return options.sort(() => Math.random() - 0.5)
+}
+
 const generateBlueprintExercise = (blueprint: any, index: number) => {
     const variableValues: Record<string, any> = {}
-    if (blueprint.variables && typeof blueprint.variables === 'object') {
-        for (const key of Object.keys(blueprint.variables)) {
-            const value = blueprint.variables[key]
-            if (typeof value === 'object' && value !== null && 'min' in value && 'max' in value) {
-                if (value.type === 'int') {
-                    variableValues[key] = randomInt(value.min, value.max)
-                } else {
-                    const decimals = value.decimals ?? 2
-                    variableValues[key] = randomFloat(value.min, value.max, decimals)
-                }
+    const variableEntries = getVariableEntries(blueprint.variables)
+    for (const [key, value] of variableEntries) {
+        if (typeof value === 'object' && value !== null && 'min' in value && 'max' in value) {
+            if (value.type === 'int') {
+                variableValues[key] = randomInt(value.min, value.max)
             } else {
-                variableValues[key] = value
+                const decimals = value.decimals ?? 2
+                variableValues[key] = randomFloat(value.min, value.max, decimals)
             }
+        } else {
+            variableValues[key] = value
         }
     }
 
     const question = buildTemplate(blueprint.questionTemplate, variableValues)
     const rawAnswer = buildTemplate(blueprint.correctAnswerTemplate, variableValues)
-    const evaluatedAnswer = evaluateExpression(rawAnswer)
-    const correctAnswer = typeof evaluatedAnswer === 'number' ? Number(evaluatedAnswer.toFixed(2)) : evaluatedAnswer
-    const result = typeof correctAnswer === 'number' ? correctAnswer : rawAnswer
-    const explanation = buildTemplate(blueprint.explanationTemplate, { ...variableValues, result })
 
+    let correctAnswer: string
+    let result: string | number
     let options: string[] | undefined
-    if (blueprint.type === 'multiple-choice') {
-        const answerText = String(correctAnswer)
-        options = [answerText]
-        while (options.length < 4) {
-            const distractor = typeof correctAnswer === 'number' ? String(correctAnswer + randomInt(1, 9)) : `Sai ${options.length}`
-            if (!options.includes(distractor)) {
-                options.push(distractor)
-            }
+    let exerciseType: 'multiple-choice' | 'fill-in' = 'fill-in'
+
+    if (blueprint.type === 'theoretical') {
+        const renderedAnswers = Array.isArray(blueprint.correctAnswerTemplate)
+            ? blueprint.correctAnswerTemplate.map((answerTemplate: any) => buildTemplate(answerTemplate, variableValues)).filter(Boolean)
+            : [buildTemplate(blueprint.correctAnswerTemplate, variableValues)].filter(Boolean)
+
+        const parsedAnswers = renderedAnswers.length
+            ? renderedAnswers
+            : parseTheoreticalAnswers(rawAnswer)
+
+        const normalizedAnswerTokens = parsedAnswers
+            .flatMap((answer: string | string[]) => Array.isArray(answer) ? answer : String(answer).split(','))
+            .map((token: string) => token.trim())
+            .filter(Boolean)
+
+        const resolvedAnswers = resolveTheoreticalOptionValues(blueprint, normalizedAnswerTokens)
+        correctAnswer = resolvedAnswers.length ? resolvedAnswers.join(', ') : rawAnswer.trim()
+        result = correctAnswer
+        options = getTheoreticalOptionValues(blueprint)
+        exerciseType = 'multiple-choice'
+    } else if (blueprint.type === 'calculation') {
+        const evaluatedAnswer = evaluateExpression(rawAnswer)
+        const answerValue = typeof evaluatedAnswer === 'number' ? Number(evaluatedAnswer.toFixed(2)) : evaluatedAnswer
+        correctAnswer = typeof answerValue === 'number' ? String(answerValue) : String(answerValue ?? rawAnswer)
+        result = typeof answerValue === 'number' ? answerValue : rawAnswer
+
+        const useMultipleChoice = Math.random() < 0.5
+        if (useMultipleChoice && typeof answerValue === 'number' && Number.isFinite(answerValue)) {
+            options = createCalculationOptions(answerValue)
+            exerciseType = 'multiple-choice'
         }
-        options = options.sort(() => Math.random() - 0.5)
+    } else {
+        const evaluatedAnswer = evaluateExpression(rawAnswer)
+        const answerValue = typeof evaluatedAnswer === 'number' ? Number(evaluatedAnswer.toFixed(2)) : evaluatedAnswer
+        correctAnswer = typeof answerValue === 'number' ? String(answerValue) : String(answerValue ?? rawAnswer)
+        result = typeof answerValue === 'number' ? answerValue : rawAnswer
     }
+
+    const explanation = buildTemplate(blueprint.explanationTemplate, { ...variableValues, result })
 
     return {
         id: Date.now() + index,
         chapterId: blueprint.chapterId || '',
         lessonId: blueprint.lessonId || '',
         lessonTitle: blueprint.lessonTitle || '',
-        type: blueprint.type === 'calculation' ? 'calculation' : 'multiple-choice',
+        type: exerciseType,
         question,
         options,
         correctAnswer,
@@ -90,15 +238,6 @@ const generateBlueprintExercise = (blueprint: any, index: number) => {
         difficulty: blueprint.difficulty || 'basic',
         category: blueprint.category || 'Luyện tập',
     }
-}
-
-const getDefaultExerciseSelector = async (lessonId?: string, chapterId?: string) => {
-    const query: any = {}
-    if (lessonId) query.lessonId = lessonId
-    if (chapterId && chapterId !== 'all' && !lessonId) query.chapterId = chapterId
-
-    const exercises = await Exercise.find(query).lean()
-    return exercises
 }
 
 export async function GET(request: NextRequest) {
@@ -109,6 +248,7 @@ export async function GET(request: NextRequest) {
         const lessonId = searchParams.get('lessonId')
         const chapterId = searchParams.get('chapterId')
         const defaultTest = searchParams.get('default')
+        const listTests = searchParams.get('list')
 
         if (accessCode) {
             const test = await PracticeTest.findOne({ accessCode }).lean()
@@ -118,48 +258,40 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: true, test })
         }
 
+        if (listTests === 'true') {
+            const query: any = {}
+            if (lessonId) {
+                query.lessonId = lessonId
+            } else if (chapterId && chapterId !== 'all') {
+                query.chapterId = chapterId
+            }
+            const tests = await PracticeTest.find(query).sort({ createdAt: -1 }).limit(20).lean()
+            return NextResponse.json({ success: true, tests })
+        }
+
         if (defaultTest === 'true') {
-            const query: any = { source: 'stored', isDefault: true }
-            if (lessonId) query.lessonId = lessonId
-            if (chapterId && chapterId !== 'all' && !lessonId) query.chapterId = chapterId
-            if (chapterId === 'all' || (!lessonId && !chapterId)) {
-                delete query.lessonId
-                delete query.chapterId
+            const blueprintQuery: any = {}
+            if (lessonId) {
+                blueprintQuery.lessonId = lessonId
+            } else if (chapterId && chapterId !== 'all') {
+                blueprintQuery.chapterId = chapterId
+            }
+            const blueprints = await ExerciseBlueprint.find(blueprintQuery).lean()
+            if (!blueprints.length) {
+                return NextResponse.json({ success: false, message: 'Không tìm thấy blueprint để tạo đề' }, { status: 404 })
             }
 
-            let test = await PracticeTest.findOne(query).lean()
-            if (test) {
-                return NextResponse.json({ success: true, test })
-            }
-
-            const exercises = await getDefaultExerciseSelector(lessonId || undefined, chapterId || undefined)
-            if (!exercises.length) {
-                return NextResponse.json({ success: false, message: 'Không tìm thấy bài tập để tạo đề' }, { status: 404 })
-            }
+            const exercises = blueprints.map((blueprint: any, index: number) => generateBlueprintExercise(blueprint, index))
 
             const model = new PracticeTest({
                 accessCode: await generateUniqueCode(),
                 lessonId: lessonId || null,
                 chapterId: chapterId === 'all' ? null : chapterId || null,
                 timeAlloted: 30,
-                source: 'stored',
-                isDefault: true,
-                exercises: exercises.map((exercise: any, index: number) => ({
-                    id: exercise.id,
-                    chapterId: exercise.chapterId,
-                    lessonId: exercise.lessonId,
-                    lessonTitle: exercise.lessonTitle,
-                    type: exercise.type,
-                    question: exercise.question,
-                    options: exercise.options,
-                    correctAnswer: exercise.correctAnswer,
-                    explanation: exercise.explanation,
-                    difficulty: exercise.difficulty,
-                    category: exercise.category,
-                })),
+                exercises,
             })
             await model.save()
-            test = model.toObject()
+            const test = model.toObject()
             return NextResponse.json({ success: true, test })
         }
 
@@ -182,70 +314,56 @@ export async function POST(request: NextRequest) {
     try {
         await dbConnect()
         const body = await request.json()
-        const { lessonId, chapterId, timeAlloted, source = 'stored', numQuestions = 10 } = body
+        const { lessonId, chapterId, timeAlloted, numQuestions = 10, blueprintIds, previewOnly = false, previewExercises } = body
+
+        if (Array.isArray(previewExercises) && previewExercises.length) {
+            const exercises = previewExercises.map((exercise: any, index: number) => normalizePreviewExercise(exercise, index))
+            if (previewOnly) {
+                return NextResponse.json({ success: true, exercises })
+            }
+
+            const test = new PracticeTest({
+                accessCode: await generateUniqueCode(),
+                lessonId: lessonId || null,
+                chapterId: chapterId === 'all' ? null : chapterId || null,
+                timeAlloted: timeAlloted || 30,
+                exercises,
+            })
+
+            await test.save()
+            return NextResponse.json({ success: true, test })
+        }
+
+        const blueprintQuery: any = {}
+        if (lessonId) {
+            blueprintQuery.lessonId = lessonId
+        } else if (chapterId && chapterId !== 'all') {
+            blueprintQuery.chapterId = chapterId
+        }
+
+        const difficulty = body.difficulty
+        if (difficulty && difficulty !== 'all') {
+            blueprintQuery.difficulty = difficulty
+        }
+
+        let blueprints = await ExerciseBlueprint.find(blueprintQuery).lean()
+        if (Array.isArray(blueprintIds) && blueprintIds.length) {
+            blueprints = await ExerciseBlueprint.find({ id: { $in: blueprintIds.map(Number) } }).lean()
+        }
+
+        if (!blueprints.length) {
+            return NextResponse.json({ success: false, message: 'Không tìm thấy blueprint để tạo đề' }, { status: 404 })
+        }
 
         const exercises: any[] = []
-        if (source === 'blueprint') {
-            if (!lessonId) {
-                return NextResponse.json({ success: false, message: 'lessonId is required for blueprint generation' }, { status: 400 })
-            }
-            const blueprints = await ExerciseBlueprint.find({ lessonId }).lean()
-            if (!blueprints.length) {
-                return NextResponse.json({ success: false, message: 'Không tìm thấy blueprint để tạo đề' }, { status: 404 })
-            }
-            for (let i = 0; i < Math.min(numQuestions, blueprints.length); i += 1) {
-                const blueprint = blueprints[i % blueprints.length]
-                exercises.push(generateBlueprintExercise(blueprint, i))
-            }
-        } else {
-            const query: any = {}
+        const shuffledBlueprints = [...blueprints].sort(() => Math.random() - 0.5)
+        for (let i = 0; i < Math.min(numQuestions, shuffledBlueprints.length); i += 1) {
+            const blueprint = shuffledBlueprints[i % shuffledBlueprints.length]
+            exercises.push(generateBlueprintExercise(blueprint, i))
+        }
 
-            // lesson / chapter filter (keep existing logic)
-            if (lessonId) {
-                query.lessonId = lessonId
-            } else if (chapterId && chapterId !== 'all') {
-                query.chapterId = chapterId
-            }
-
-            const difficulty = body.difficulty
-            if (difficulty && difficulty !== 'all') {
-                query.difficulty = difficulty
-            }
-
-            console.log('STORED TEST QUERY:', query)
-            console.log('numQuestions:', numQuestions)
-
-            const storedExercises = await Exercise.find(query).lean()
-
-            if (!storedExercises.length) {
-                return NextResponse.json(
-                    { success: false, message: 'Không tìm thấy bài tập đã lưu để tạo đề' },
-                    { status: 404 }
-                )
-            }
-
-            // shuffle
-            const shuffled = storedExercises.sort(() => Math.random() - 0.5)
-
-            // limit by FE setting
-            const selected = shuffled.slice(0, numQuestions)
-
-            for (let i = 0; i < selected.length; i += 1) {
-                const exercise = selected[i]
-                exercises.push({
-                    id: exercise.id,
-                    chapterId: exercise.chapterId,
-                    lessonId: exercise.lessonId,
-                    lessonTitle: exercise.lessonTitle,
-                    type: exercise.type,
-                    question: exercise.question,
-                    options: exercise.options,
-                    correctAnswer: exercise.correctAnswer,
-                    explanation: exercise.explanation,
-                    difficulty: exercise.difficulty,
-                    category: exercise.category,
-                })
-            }
+        if (previewOnly) {
+            return NextResponse.json({ success: true, exercises })
         }
 
         const test = new PracticeTest({
@@ -253,8 +371,6 @@ export async function POST(request: NextRequest) {
             lessonId: lessonId || null,
             chapterId: chapterId === 'all' ? null : chapterId || null,
             timeAlloted: timeAlloted || 30,
-            source,
-            isDefault: false,
             exercises,
         })
 

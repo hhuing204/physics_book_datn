@@ -13,6 +13,7 @@ export interface IPracticeProgress {
         exerciseId: string
         answer: mongoose.Schema.Types.Mixed
         correct: boolean
+        graded?: boolean
         question: string
     }>
     score: number
@@ -60,6 +61,10 @@ const PracticeProgressSchema = new mongoose.Schema<IPracticeProgress>(
                     exerciseId: String,
                     answer: mongoose.Schema.Types.Mixed,
                     correct: Boolean,
+                    graded: {
+                        type: Boolean,
+                        default: true,
+                    },
                     question: String,
                 }
             ],

@@ -19,7 +19,7 @@ const ExerciseSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['multiple-choice', 'calculation'],
+    enum: ['theoretical', 'calculation', 'multiple-choice'],
     required: true
   },
   question: {

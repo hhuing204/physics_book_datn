@@ -15,7 +15,7 @@ const ExerciseBlueprintSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['multiple-choice', 'calculation'],
+        enum: ['theoretical', 'calculation'],
         required: true
     },
     questionTemplate: {
@@ -23,8 +23,8 @@ const ExerciseBlueprintSchema = new mongoose.Schema({
         required: true
     },
     correctAnswerTemplate: {
-        type: String,
-        required: true
+        type: [String],
+        default: [],
     },
     explanationTemplate: {
         type: String,

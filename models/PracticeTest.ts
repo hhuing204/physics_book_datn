@@ -15,20 +15,10 @@ const PracticeTestSchema = new mongoose.Schema(
             type: String,
             default: null,
         },
-        source: {
-            type: String,
-            enum: ['stored', 'blueprint'],
-            required: true,
-            default: 'stored',
-        },
         timeAlloted: {
             type: Number,
             required: true,
             default: 30,
-        },
-        isDefault: {
-            type: Boolean,
-            default: false,
         },
         exercises: {
             type: [mongoose.Schema.Types.Mixed],

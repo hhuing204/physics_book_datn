@@ -6,7 +6,7 @@ import User from '@/models/User';
 export async function GET(request: NextRequest) {
   try {
     await dbConnect();
-    
+
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.split(' ')[1];
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
         name: user.name,
         email: user.email,
         avatar: user.avatar,
-        role: user.role,
+        role: (user.role || 'learner').toString().toLowerCase(),
         isActive: user.isActive,
         username: user.username,
         createdAt: user.createdAt,

@@ -16,7 +16,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'Learner',
+    role: 'learner',
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -85,7 +85,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
           email: '',
           password: '',
           confirmPassword: '',
-          role: 'Learner',
+          role: 'learner',
         });
         onClose();
         onSuccess?.();
@@ -107,7 +107,7 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
       email: '',
       password: '',
       confirmPassword: '',
-      role: 'Learner',
+      role: 'learner',
     });
   };
 
@@ -163,8 +163,8 @@ export default function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps
                   }
                   className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
-                  <option value="Learner">Học sinh</option>
-                  <option value="Teacher">Giáo viên</option>
+                  <option value="learner">Học sinh</option>
+                  <option value="teacher">Giáo viên</option>
                 </select>
               </div>
 

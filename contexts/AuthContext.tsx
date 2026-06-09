@@ -7,6 +7,12 @@ interface AuthContextType {
   user: IUser | null;
   login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
   register: (name: string, email: string, password: string, role?: string) => Promise<{ success: boolean; message: string }>;
+  updateProfile: (data: {
+    name: string;
+    email: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) => Promise<{ success: boolean; message: string }>;
   logout: () => void;
   loading: boolean;
 }
@@ -89,7 +95,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: string = 'Learner'): Promise<{ success: boolean; message: string }> => {
+  const register = async (name: string, email: string, password: string, role: string = 'learner'): Promise<{ success: boolean; message: string }> => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -113,6 +119,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const updateProfile = async (data: {
+    name: string;
+    email: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }): Promise<{ success: boolean; message: string }> => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch('/api/auth/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setUser(result.user);
+        return { success: true, message: result.message || 'Cập nhật thông tin thành công!' };
+      }
+
+      return { success: false, message: result.message || 'Cập nhật thất bại!' };
+    } catch (error) {
+      return { success: false, message: 'Có lỗi xảy ra, vui lòng thử lại!' };
+    }
+  };
+
   const logout = () => {
     localStorage.removeItem('auth_token');
     setUser(null);
@@ -122,6 +158,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     user,
     login,
     register,
+    updateProfile,
     logout,
     loading,
   };

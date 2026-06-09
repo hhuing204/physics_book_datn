@@ -2,8 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import dbConnect from '@/lib/mongodb'
 import ExerciseBlueprint from '@/models/ExerciseBlueprint'
 import jwt from 'jsonwebtoken'
+import { normalizeBlueprintVariablesForClient, normalizeBlueprintVariablesForStorage } from '@/lib/exerciseBlueprintUtils'
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production'
+
+function normalizeCorrectAnswerTemplate(value: any): string[] {
+    if (Array.isArray(value)) {
+        return value.map(v => String(v).trim()).filter(Boolean)
+    }
+
+    if (typeof value === 'string') {
+        return value
+            .split(',')
+            .map(v => v.trim())
+            .filter(Boolean)
+    }
+
+    return []
+}
+
 
 // Verify token and ensure the user is a Teacher
 async function verifyTeacher(request: NextRequest) {
@@ -14,21 +31,18 @@ async function verifyTeacher(request: NextRequest) {
 
     const token = authHeader.substring(7)
     try {
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email?: string }
-        if (!decoded || !decoded.userId) return null
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string }
+        if (!decoded?.userId) return null
 
-        // fetch user from DB
         await dbConnect()
         const User = (await import('@/models/User')).default
         const user = await User.findById(decoded.userId)
-        if (!user) return null
 
-        if ((user.role || '').toString().toLowerCase() !== 'teacher') {
-            return null
-        }
+        if (!user) return null
+        if ((user.role || '').toLowerCase() !== 'teacher') return null
 
         return user
-    } catch (error) {
+    } catch {
         return null
     }
 }
@@ -36,10 +50,12 @@ async function verifyTeacher(request: NextRequest) {
 // GET - Fetch all exercise blueprints
 export async function GET(request: NextRequest) {
     try {
-
         const teacher = await verifyTeacher(request)
         if (!teacher) {
-            return NextResponse.json({ message: 'Unauthorized - Teacher access required' }, { status: 403 })
+            return NextResponse.json(
+                { message: 'Unauthorized - Teacher access required' },
+                { status: 403 }
+            )
         }
 
         await dbConnect()
@@ -49,7 +65,7 @@ export async function GET(request: NextRequest) {
         const difficulty = searchParams.get('difficulty')
         const search = searchParams.get('search')
 
-        let query: any = {}
+        const query: any = {}
 
         if (lessonId && lessonId !== 'all') {
             query.lessonId = lessonId
@@ -66,7 +82,20 @@ export async function GET(request: NextRequest) {
             ]
         }
 
-        const blueprints = await ExerciseBlueprint.find(query).sort({ createdAt: -1 })
+        const rawBlueprints = await ExerciseBlueprint.find(query)
+            .sort({ createdAt: -1 })
+
+        const blueprints = rawBlueprints.map(bp => {
+            const obj = bp.toObject()
+
+            return {
+                ...obj,
+                variables: normalizeBlueprintVariablesForClient(obj.variables),
+                correctAnswerTemplate: normalizeCorrectAnswerTemplate(
+                    obj.correctAnswerTemplate
+                )
+            }
+        })
 
         return NextResponse.json({
             success: true,
@@ -74,9 +103,15 @@ export async function GET(request: NextRequest) {
         })
     } catch (error) {
         console.error('Error fetching exercise blueprints:', error)
+
         return NextResponse.json(
-            { success: false, message: 'Internal server error' },
-            { status: 500 }
+            {
+                success: false,
+                message: 'Internal server error'
+            },
+            {
+                status: 500
+            }
         )
     }
 }
@@ -84,10 +119,12 @@ export async function GET(request: NextRequest) {
 // POST - Add new exercise blueprint
 export async function POST(request: NextRequest) {
     try {
-
         const teacher = await verifyTeacher(request)
         if (!teacher) {
-            return NextResponse.json({ message: 'Unauthorized - Teacher access required' }, { status: 403 })
+            return NextResponse.json(
+                { message: 'Unauthorized - Teacher access required' },
+                { status: 403 }
+            )
         }
 
         const body = await request.json()
@@ -104,7 +141,14 @@ export async function POST(request: NextRequest) {
             variables
         } = body
 
-        if (id == null || !lessonId || !chapterId || !questionTemplate || !explanationTemplate || !category) {
+        if (
+            id == null ||
+            !lessonId ||
+            !chapterId ||
+            !questionTemplate ||
+            !explanationTemplate ||
+            !category
+        ) {
             return NextResponse.json(
                 { success: false, message: 'Missing required fields' },
                 { status: 400 }
@@ -119,11 +163,11 @@ export async function POST(request: NextRequest) {
             chapterId,
             type,
             questionTemplate,
-            correctAnswerTemplate,
+            correctAnswerTemplate: normalizeCorrectAnswerTemplate(correctAnswerTemplate),
             explanationTemplate,
             difficulty,
             category,
-            variables: variables || {}
+            variables: normalizeBlueprintVariablesForStorage(variables)
         })
 
         await newBlueprint.save()
@@ -145,10 +189,12 @@ export async function POST(request: NextRequest) {
 // PUT - Update exercise blueprint
 export async function PUT(request: NextRequest) {
     try {
-
         const teacher = await verifyTeacher(request)
         if (!teacher) {
-            return NextResponse.json({ message: 'Unauthorized - Teacher access required' }, { status: 403 })
+            return NextResponse.json(
+                { message: 'Unauthorized - Teacher access required' },
+                { status: 403 }
+            )
         }
 
         const body = await request.json()
@@ -165,7 +211,14 @@ export async function PUT(request: NextRequest) {
             variables
         } = body
 
-        if (id == null || !lessonId || !chapterId || !questionTemplate || !explanationTemplate || !category) {
+        if (
+            id == null ||
+            !lessonId ||
+            !chapterId ||
+            !questionTemplate ||
+            !explanationTemplate ||
+            !category
+        ) {
             return NextResponse.json(
                 { success: false, message: 'Missing required fields' },
                 { status: 400 }
@@ -181,11 +234,11 @@ export async function PUT(request: NextRequest) {
                 chapterId,
                 type,
                 questionTemplate,
-                correctAnswerTemplate,
+                correctAnswerTemplate: normalizeCorrectAnswerTemplate(correctAnswerTemplate),
                 explanationTemplate,
                 difficulty,
                 category,
-                variables: variables || {}
+                variables: normalizeBlueprintVariablesForStorage(variables)
             },
             { new: true }
         )
@@ -214,10 +267,12 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete exercise blueprint
 export async function DELETE(request: NextRequest) {
     try {
-
         const teacher = await verifyTeacher(request)
         if (!teacher) {
-            return NextResponse.json({ message: 'Unauthorized - Teacher access required' }, { status: 403 })
+            return NextResponse.json(
+                { message: 'Unauthorized - Teacher access required' },
+                { status: 403 }
+            )
         }
 
         const { searchParams } = new URL(request.url)

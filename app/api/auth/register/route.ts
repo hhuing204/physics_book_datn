@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Normalize role: accept 'Teacher' or default to 'Learner'
-    const requestedRole = typeof role === 'string' ? role.trim() : '';
-    const normalizedRole = requestedRole.toLowerCase() === 'teacher' ? 'Teacher' : 'Learner';
+    // Normalize role: accept 'teacher' or default to 'learner'
+    const requestedRole = typeof role === 'string' ? role.trim().toLowerCase() : '';
+    const normalizedRole = requestedRole === 'teacher' ? 'teacher' : 'learner';
 
     // Create user
     const newUser = new User({
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
       name: newUser.name,
       email: newUser.email,
       avatar: newUser.avatar,
-      role: newUser.role || 'Learner',
+      role: (newUser.role || 'learner').toString().toLowerCase(),
       createdAt: newUser.createdAt,
     };
 

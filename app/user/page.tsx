@@ -4,6 +4,14 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
 
+interface PracticeAnswer {
+    exerciseId: string
+    answer: any
+    correct: boolean
+    graded?: boolean
+    question: string
+}
+
 interface PracticeAttempt {
     _id: string
     accessCode: string
@@ -18,12 +26,7 @@ interface PracticeAttempt {
         name: string
         email: string
     }
-    answers?: Array<{
-        exerciseId: string
-        answer: any
-        correct: boolean
-        question: string
-    }>
+    answers?: PracticeAnswer[]
 }
 
 interface Lesson {
@@ -39,7 +42,7 @@ interface Chapter {
 }
 
 export default function UserPage() {
-    const { user, loading } = useAuth()
+    const { user, loading, updateProfile } = useAuth()
     const [lessonProgressCount, setLessonProgressCount] = useState<number>(0)
     const [completedLessonIds, setCompletedLessonIds] = useState<string[]>([])
     const [chapters, setChapters] = useState<Chapter[]>([])
@@ -48,6 +51,15 @@ export default function UserPage() {
     const [showAllAttempts, setShowAllAttempts] = useState(false)
     const [showLessonDetails, setShowLessonDetails] = useState(false)
     const [loadError, setLoadError] = useState<string | null>(null)
+
+    const [profileName, setProfileName] = useState<string>('')
+    const [profileEmail, setProfileEmail] = useState<string>('')
+    const [currentPassword, setCurrentPassword] = useState<string>('')
+    const [newPassword, setNewPassword] = useState<string>('')
+    const [confirmNewPassword, setConfirmNewPassword] = useState<string>('')
+    const [profileMessage, setProfileMessage] = useState<string | null>(null)
+    const [profileError, setProfileError] = useState<string | null>(null)
+    const [isUpdatingProfile, setIsUpdatingProfile] = useState(false)
 
     // Teacher search state
     const [searchAccessCode, setSearchAccessCode] = useState<string>('')
@@ -102,6 +114,64 @@ export default function UserPage() {
 
         loadData()
     }, [loading, user])
+
+    useEffect(() => {
+        if (user) {
+            setProfileName(user.name || '')
+            setProfileEmail(user.email || '')
+        }
+    }, [user])
+
+    const handleProfileUpdate = async (e: React.FormEvent) => {
+        e.preventDefault()
+        setProfileError(null)
+        setProfileMessage(null)
+
+        if (!profileName.trim() || !profileEmail.trim()) {
+            setProfileError('Vui lòng nhập tên và email.')
+            return
+        }
+
+        if (newPassword) {
+            if (newPassword.length < 6) {
+                setProfileError('Mật khẩu mới phải có ít nhất 6 ký tự.')
+                return
+            }
+            if (newPassword !== confirmNewPassword) {
+                setProfileError('Mật khẩu mới và xác nhận mật khẩu không khớp.')
+                return
+            }
+            if (!currentPassword) {
+                setProfileError('Vui lòng nhập mật khẩu hiện tại để đổi mật khẩu.')
+                return
+            }
+        }
+
+        setIsUpdatingProfile(true)
+
+        try {
+            const result = await updateProfile({
+                name: profileName,
+                email: profileEmail,
+                currentPassword: currentPassword || undefined,
+                newPassword: newPassword || undefined,
+            })
+
+            if (result.success) {
+                setProfileMessage(result.message)
+                setCurrentPassword('')
+                setNewPassword('')
+                setConfirmNewPassword('')
+            } else {
+                setProfileError(result.message)
+            }
+        } catch (error) {
+            console.error(error)
+            setProfileError('Có lỗi xảy ra. Vui lòng thử lại.')
+        } finally {
+            setIsUpdatingProfile(false)
+        }
+    }
 
     const handleTeacherSearch = async (e: React.FormEvent) => {
         e.preventDefault()
@@ -185,6 +255,93 @@ export default function UserPage() {
                         <p className="mt-2 text-lg font-medium text-gray-900">{user.createdAt ? new Date(user.createdAt ?? '').toLocaleDateString() : 'Không xác định'}</p>
                     </div>
                 </div>
+            </div>
+
+            <div className="mb-8 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div className="flex items-center justify-between gap-4">
+                    <div>
+                        <h2 className="text-2xl font-semibold">Chỉnh sửa thông tin</h2>
+                        <p className="mt-2 text-gray-600">Cập nhật tên, email hoặc mật khẩu của bạn.</p>
+                    </div>
+                </div>
+
+                <form onSubmit={handleProfileUpdate} className="mt-6 space-y-4">
+                    {profileMessage && (
+                        <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-green-800">
+                            {profileMessage}
+                        </div>
+                    )}
+                    {profileError && (
+                        <div className="rounded-lg bg-red-50 border border-red-200 p-4 text-red-800">
+                            {profileError}
+                        </div>
+                    )}
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-gray-700">Họ và tên</span>
+                            <input
+                                type="text"
+                                value={profileName}
+                                onChange={(e) => setProfileName(e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            />
+                        </label>
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-gray-700">Email</span>
+                            <input
+                                type="email"
+                                value={profileEmail}
+                                onChange={(e) => setProfileEmail(e.target.value)}
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            />
+                        </label>
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-3">
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-gray-700">Mật khẩu hiện tại</span>
+                            <input
+                                type="password"
+                                value={currentPassword}
+                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                placeholder="Để đổi mật khẩu"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            />
+                        </label>
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-gray-700">Mật khẩu mới</span>
+                            <input
+                                type="password"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                placeholder="Mật khẩu mới"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            />
+                        </label>
+                        <label className="space-y-2">
+                            <span className="text-sm font-medium text-gray-700">Xác nhận mật khẩu</span>
+                            <input
+                                type="password"
+                                value={confirmNewPassword}
+                                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                                placeholder="Nhập lại mật khẩu mới"
+                                className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+                            />
+                        </label>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <p className="text-sm text-gray-500">Chỉ điền mật khẩu khi bạn muốn thay đổi mật khẩu.</p>
+                        <button
+                            type="submit"
+                            disabled={isUpdatingProfile}
+                            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                            {isUpdatingProfile ? 'Đang cập nhật...' : 'Cập nhật thay đổi'}
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <div className="grid gap-6">
@@ -399,15 +556,15 @@ export default function UserPage() {
 
                             <div className="space-y-4">
                                 {(selectedAttempt.answers && selectedAttempt.answers.length > 0) ? (
-                                    selectedAttempt.answers.map((answer, index) => (
+                                    selectedAttempt.answers.map((answer: PracticeAnswer, index) => (
                                         <div key={answer.exerciseId || index} className="rounded-2xl border border-gray-200 bg-white p-4">
                                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                 <div>
                                                     <p className="text-sm text-gray-500">Câu hỏi #{index + 1}</p>
                                                     <p className="mt-1 text-base font-medium text-gray-900">{answer.question}</p>
                                                 </div>
-                                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${answer.correct ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                    {answer.correct ? 'Đúng' : 'Sai'}
+                                                <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${answer.graded === false ? 'bg-yellow-100 text-yellow-800' : answer.correct ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                    {answer.graded === false ? 'Chưa kiểm tra' : answer.correct ? 'Đúng' : 'Sai'}
                                                 </span>
                                             </div>
                                             <div className="mt-3 space-y-2 text-sm text-gray-700">

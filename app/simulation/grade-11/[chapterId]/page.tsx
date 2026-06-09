@@ -9,7 +9,6 @@ import * as Icons from 'lucide-react';
 interface Chapter {
     _id: string;
     chapterId: string;
-    chapterNumber: number;
     title: string;
     subtitle: string;
     icon: string;
@@ -129,10 +128,12 @@ export default function ChapterPage() {
             <div className="max-w-7xl mx-auto p-6">
                 {/* Header */}
                 <div className="mb-8">
-                    <div className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${chapter.color.start} ${chapter.color.end} bg-opacity-10 rounded-full mb-4`}>
+                    <div
+                        className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${chapter.color.start} ${chapter.color.end} bg-opacity-10 rounded-full mb-4`}
+                    >
                         {getIcon(chapter.icon)}
-                        <span className={`text-sm font-medium bg-gradient-to-r ${chapter.color.start} ${chapter.color.end} bg-clip-text text-transparent`}>
-                            Chương {chapter.chapterNumber}
+                        <span className="text-sm font-medium text-white">
+                            Chương {chapter.chapterId}
                         </span>
                     </div>
                     <h1 className={`text-4xl font-bold bg-gradient-to-r ${chapter.color.start} ${chapter.color.end} bg-clip-text text-transparent`}>

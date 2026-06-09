@@ -24,10 +24,6 @@ export default function RootLayout({
       <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
         <script
-          src="https://polyfill.io/v3/polyfill.min.js?features=es6"
-          async
-        />
-        <script
           dangerouslySetInnerHTML={{
             __html: `window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\\\(', '\\\\)']], displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']] }, svg: { fontCache: 'global' } };`
           }}
