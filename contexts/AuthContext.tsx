@@ -5,23 +5,36 @@ import { IUser } from '@/models/User';
 
 interface AuthContextType {
   user: IUser | null;
-  login: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
-  register: (name: string, email: string, password: string, role?: string) => Promise<{ success: boolean; message: string }>;
+  isAuthenticated: boolean;
+  loading: boolean;
+
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ success: boolean; message: string; redirectTo?: string }>;
+
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    role?: string
+  ) => Promise<{ success: boolean; message: string }>;
+
   updateProfile: (data: {
     name: string;
     email: string;
     currentPassword?: string;
     newPassword?: string;
   }) => Promise<{ success: boolean; message: string }>;
+
   logout: () => void;
-  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
@@ -34,6 +47,8 @@ interface AuthProviderProps {
 export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<IUser | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isAuthenticated = !!user;
 
   useEffect(() => {
     checkAuth();
@@ -54,8 +69,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       if (response.ok) {
-        const userData = await response.json();
-        setUser(userData.user);
+        const data = await response.json();
+        setUser(data.user);
       } else {
         localStorage.removeItem('auth_token');
       }
@@ -67,13 +82,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; message: string; redirectTo?: string }> => {
+  const login = async (
+    email: string,
+    password: string
+  ): Promise<{ success: boolean; message: string; redirectTo?: string }> => {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
@@ -82,26 +98,36 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (response.ok) {
         localStorage.setItem('auth_token', data.token);
         setUser(data.user);
+
         return {
           success: true,
           message: 'Đăng nhập thành công!',
-          redirectTo: data.redirectTo
+          redirectTo: data.redirectTo,
         };
-      } else {
-        return { success: false, message: data.message || 'Đăng nhập thất bại!' };
       }
-    } catch (error) {
-      return { success: false, message: 'Có lỗi xảy ra, vui lòng thử lại!' };
+
+      return {
+        success: false,
+        message: data.message || 'Đăng nhập thất bại!',
+      };
+    } catch {
+      return {
+        success: false,
+        message: 'Có lỗi xảy ra, vui lòng thử lại!',
+      };
     }
   };
 
-  const register = async (name: string, email: string, password: string, role: string = 'learner'): Promise<{ success: boolean; message: string }> => {
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    role: string = 'Learner'
+  ): Promise<{ success: boolean; message: string }> => {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password, role }),
       });
 
@@ -110,12 +136,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       if (response.ok) {
         localStorage.setItem('auth_token', data.token);
         setUser(data.user);
+
         return { success: true, message: 'Đăng ký thành công!' };
-      } else {
-        return { success: false, message: data.message || 'Đăng ký thất bại!' };
       }
-    } catch (error) {
-      return { success: false, message: 'Có lỗi xảy ra, vui lòng thử lại!' };
+
+      return {
+        success: false,
+        message: data.message || 'Đăng ký thất bại!',
+      };
+    } catch {
+      return {
+        success: false,
+        message: 'Có lỗi xảy ra, vui lòng thử lại!',
+      };
     }
   };
 
@@ -127,6 +160,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }): Promise<{ success: boolean; message: string }> => {
     try {
       const token = localStorage.getItem('auth_token');
+
       const response = await fetch('/api/auth/update', {
         method: 'POST',
         headers: {
@@ -140,12 +174,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       if (response.ok) {
         setUser(result.user);
-        return { success: true, message: result.message || 'Cập nhật thông tin thành công!' };
+        return {
+          success: true,
+          message: result.message || 'Cập nhật thông tin thành công!',
+        };
       }
 
-      return { success: false, message: result.message || 'Cập nhật thất bại!' };
-    } catch (error) {
-      return { success: false, message: 'Có lỗi xảy ra, vui lòng thử lại!' };
+      return {
+        success: false,
+        message: result.message || 'Cập nhật thất bại!',
+      };
+    } catch {
+      return {
+        success: false,
+        message: 'Có lỗi xảy ra, vui lòng thử lại!',
+      };
     }
   };
 
@@ -154,14 +197,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
   };
 
-  const value = {
+  const value: AuthContextType = {
     user,
+    isAuthenticated,
+    loading,
     login,
     register,
     updateProfile,
     logout,
-    loading,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

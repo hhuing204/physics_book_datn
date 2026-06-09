@@ -131,8 +131,8 @@ export default function ChapterPage() {
                 <div className="mb-8">
                     <div className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${chapter.color.start} ${chapter.color.end} bg-opacity-10 rounded-full mb-4`}>
                         {getIcon(chapter.icon)}
-                        <span className={`text-sm font-medium bg-gradient-to-r ${chapter.color.start} ${chapter.color.end} bg-clip-text text-transparent`}>
-                            Chương {chapter.chapterNumber}
+                        <span className="text-sm font-medium text-white">
+                            Chương {chapter.chapterId}
                         </span>
                     </div>
                     <h1 className={`text-4xl font-bold bg-gradient-to-r ${chapter.color.start} ${chapter.color.end} bg-clip-text text-transparent`}>

@@ -205,7 +205,7 @@ export default function ProtectedSimulation({
     }
 
     // Admin/Teacher - đã xử lý ở trên
-    if (user?.role === 'admin' || user?.role === 'teacher' || user?.role === 'Teacher') {
+    if (user?.role === 'admin' || user?.role === 'teacher') {
         const roleName = user.role === 'admin' ? 'Quản trị viên' : 'Giáo viên';
         return (
             <div>
