@@ -371,6 +371,30 @@ export default function ExercisesPage() {
     setCurrentLessonExercises(exercises)
   }
 
+  const handleChapterPractice = () => {
+    if (!selectedChapter) return
+
+    const chapterLessons = lessonsByChapter[selectedChapter] || []
+    const chapterExercises = chapterLessons.flatMap((lesson) => getExercisesForLesson(selectedChapter, lesson.id))
+
+    if (chapterExercises.length === 0) {
+      alert('Chương này chưa có câu hỏi nào. Vui lòng quay lại sau!')
+      return
+    }
+
+    const limitedExercises = shuffleArray(chapterExercises).slice(0, 100)
+
+    setSelectedLesson('__chapter__')
+    setCurrentExercise(0)
+    setSelectedAnswer('')
+    setShowResult(false)
+    setScore(0)
+    setShowFinalResult(false)
+    setStartTime(new Date())
+    setCompleted(new Array(limitedExercises.length).fill(false))
+    setCurrentLessonExercises(limitedExercises)
+  }
+
   const getCurrentExercises = (): Exercise[] => {
     return currentLessonExercises
   }
@@ -896,6 +920,17 @@ export default function ExercisesPage() {
               )
             })}
           </div>
+
+          <div className="mt-6 flex justify-center">
+            <button
+              type="button"
+              onClick={handleChapterPractice}
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-fuchsia-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 transition-all hover:scale-[1.02] hover:from-violet-700 hover:to-fuchsia-700"
+            >
+              <Icons.Sparkles className="w-4 h-4" />
+              <span>Luyện tập chương {selectedChapter}: {currentChapter?.title}</span>
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -1001,7 +1036,9 @@ export default function ExercisesPage() {
               Bài tập
             </h1>
             <p className="text-gray-500 dark:text-gray-400 mt-1">
-              Chương {selectedChapter} - Bài {selectedLesson}: {currentLesson?.title}
+              {selectedLesson === '__chapter__'
+                ? `Chương ${selectedChapter} - Tổng hợp`
+                : `Chương ${selectedChapter} - Bài ${selectedLesson}: ${currentLesson?.title}`}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
